@@ -28,7 +28,7 @@ router.post(
 router.patch(
   '/:id/status',
   validate(updateWashOrderStatusSchema),
-  (req, res, next) => controller.patchWashOrderStatus(req, res, next)
+  (req, res, next) => controller.patchWashOrderStatus(req as any, res, next)
 );
 
 /**

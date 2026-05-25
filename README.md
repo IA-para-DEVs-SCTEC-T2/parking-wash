@@ -4,9 +4,18 @@ Sistema web de gerenciamento integrado de estacionamento e lavação de veículo
 
 ## 1. Visão Geral
 
-O **ParkingWash** resolve o problema de controle manual de entrada/saída de veículos e fila de lavagem, que é propenso a erros e não gera dados para análise.
+O **ParkingWash** é um sistema completo para gerenciar operações de estacionamento e serviços de lavação de veículos. Resolve o problema de controle manual de entrada/saída de veículos e fila de lavagem, que é propenso a erros e não gera dados para análise.
 
-**Solução:** API REST com cálculo automático de tarifa e controle de fila de lavagem com máquina de estados.
+**Solução:** API REST com cálculo automático de tarifa, controle de fila de lavagem com máquina de estados, e interface web intuitiva.
+
+### Tecnologias principais
+
+- **Backend:** Node.js + Express + TypeScript
+- **Frontend:** React + Vite + TypeScript
+- **Banco de dados:** Supabase (PostgreSQL gerenciado)
+- **Validação:** Zod
+- **Testes:** Jest + fast-check (property-based testing)
+- **CI/CD:** GitHub Actions
 
 ### Funcionalidades principais
 
@@ -40,6 +49,16 @@ npm run dev
 # Servidor rodará em http://localhost:3333
 ```
 
+**Variáveis de ambiente do backend:**
+
+| Variável | Descrição | Padrão | Obrigatório |
+|----------|-----------|--------|------------|
+| `SUPABASE_URL` | URL do projeto Supabase (encontre em: Supabase Dashboard → Settings → API → Project URL) | - | ✅ Sim |
+| `SUPABASE_SERVICE_KEY` | Chave de serviço do Supabase com permissões de leitura/escrita (encontre em: Supabase Dashboard → Settings → API → service_role key) | - | ✅ Sim |
+| `PORT` | Porta em que o servidor HTTP irá escutar | 3333 | ❌ Não |
+| `HOURLY_RATE` | Taxa horária de estacionamento em reais | 10.00 | ❌ Não |
+| `DAILY_RATE_CAP` | Teto máximo de cobrança diária em reais | 80.00 | ❌ Não |
+
 ### Frontend
 
 ```bash
@@ -56,6 +75,12 @@ npm run dev
 # Aplicação rodará em http://localhost:5173
 ```
 
+**Variáveis de ambiente do frontend:**
+
+| Variável | Descrição | Padrão |
+|----------|-----------|--------|
+| `VITE_API_URL` | URL base da API backend (usada pelo proxy do Vite em desenvolvimento) | http://localhost:3333 |
+
 ### Banco de Dados
 
 1. Criar um novo projeto no Supabase
@@ -65,13 +90,72 @@ npm run dev
 
 ## 3. Arquitetura
 
+### Visão geral da arquitetura
+
 ```
-Frontend (React + Vite)
-        ↓ HTTP REST
-Backend (Node.js + Express)
-        ↓ SQL
-Supabase (PostgreSQL)
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (React + Vite)                  │
+│              http://localhost:5173                          │
+│  - ParkingPanel: Check-in/Checkout de veículos             │
+│  - WashQueue: Fila de lavagem com status                   │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP REST
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│              Backend (Node.js + Express)                    │
+│              http://localhost:3333                          │
+│  - Validação com Zod                                        │
+│  - Tratamento de erros centralizado                         │
+│  - Três domínios principais (módulos)                       │
+└────────────────────────┬────────────────────────────────────┘
+                         │ SQL
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│           Supabase (PostgreSQL gerenciado)                  │
+│  - Tabelas: parking, wash_orders, wash_services            │
+│  - Autenticação e autorização                              │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+### Três domínios principais
+
+O backend é organizado em três domínios independentes:
+
+#### 1. **Parking** (`backend/src/modules/parking/`)
+Gerencia entrada e saída de veículos com cálculo automático de tarifa.
+
+- **Endpoints:**
+  - `POST /api/parking/checkin` — Registra entrada de veículo
+  - `POST /api/parking/:id/checkout` — Registra saída e calcula tarifa
+  - `GET /api/parking` — Lista veículos estacionados
+
+- **Lógica:**
+  - Impede check-in duplicado (mesma placa)
+  - Calcula tarifa por hora com teto diário
+  - Máquina de estados: `Parked` → `Exited`
+
+#### 2. **Wash Orders** (`backend/src/modules/wash-orders/`)
+Gerencia fila de lavagem com máquina de estados.
+
+- **Endpoints:**
+  - `POST /api/wash-orders` — Cria ordem de lavagem
+  - `GET /api/wash-orders` — Lista ordens
+  - `PATCH /api/wash-orders/:id/status` — Avança status
+
+- **Lógica:**
+  - Máquina de estados: `Waiting` → `InProgress` → `Completed`
+  - Valida transições de status
+  - Associa serviço de lavagem à ordem
+
+#### 3. **Wash Services** (`backend/src/modules/wash-services/`)
+Catálogo de serviços de lavagem disponíveis.
+
+- **Endpoints:**
+  - `GET /api/wash-services` — Lista serviços disponíveis
+
+- **Lógica:**
+  - Dados populados via seed (não há criação/edição)
+  - Exemplo: "Lavagem Simples" (R$30), "Lavagem Premium" (R$50)
 
 ### Decisões técnicas
 
@@ -91,6 +175,23 @@ parking-wash/
 │   │   ├── db/              # Cliente Supabase e scripts DDL
 │   │   ├── middleware/      # Erros e validação
 │   │   ├── modules/         # Domínios (parking, wash-orders, wash-services)
+│   │   │   ├── parking/
+│   │   │   │   ├── parking.controller.ts
+│   │   │   │   ├── parking.router.ts
+│   │   │   │   ├── parking.service.ts
+│   │   │   │   ├── parking.types.ts
+│   │   │   │   └── parking.validator.ts
+│   │   │   ├── wash-orders/
+│   │   │   │   ├── wash-orders.controller.ts
+│   │   │   │   ├── wash-orders.router.ts
+│   │   │   │   ├── wash-orders.service.ts
+│   │   │   │   ├── wash-orders.types.ts
+│   │   │   │   └── wash-orders.validator.ts
+│   │   │   └── wash-services/
+│   │   │       ├── wash-services.controller.ts
+│   │   │       ├── wash-services.router.ts
+│   │   │       ├── wash-services.service.ts
+│   │   │       └── wash-services.types.ts
 │   │   ├── app.ts           # Express app
 │   │   └── server.ts        # Inicialização do servidor
 │   ├── tests/               # Testes com Jest + fast-check
@@ -125,41 +226,64 @@ parking-wash/
 
 ## 4. Uso de IA
 
-Este projeto foi desenvolvido com foco em **processo de desenvolvimento com IA**, não apenas no código.
+Este projeto foi desenvolvido com foco em **processo de desenvolvimento com IA**, não apenas no código. O objetivo é documentar como a IA foi utilizada em cada etapa do desenvolvimento, incluindo os prompts, respostas, análises críticas e refinamentos.
 
 ### Padrões de prompting aplicados
 
 - **Prompt estruturado**: contexto + restrições + formato de saída esperado
 - **Prompt iterativo**: análise crítica e refinamento baseado em feedback
+- **Prompt com exemplos**: demonstração de padrões esperados
+- **Prompt com restrições**: limitações e regras de negócio
 
-### Ciclos de refinamento
+### Ciclos de refinamento documentados
 
 Cada etapa do desenvolvimento foi documentada em `docs/prompts/`:
 
 1. **01-arquitetura.md** — Design do sistema (3+ ciclos de refinamento)
+   - Definição de domínios
+   - Escolha de tecnologias
+   - Estrutura de pastas
+
 2. **02-backend.md** — Implementação dos endpoints (erros da IA e correções)
+   - Endpoints REST
+   - Validação com Zod
+   - Tratamento de erros
+
 3. **03-testes.md** — Estratégia de testes (cenários não cobertos)
+   - Testes unitários com Jest
+   - Property-based testing com fast-check
+   - Cobertura de casos extremos
+
 4. **04-frontend.md** — Componentes React (iterações de design)
+   - Componentes reutilizáveis
+   - Hooks customizados
+   - Integração com API
+
 5. **05-cicd.md** — Pipeline CI/CD (ajustes de workflow)
+   - GitHub Actions
+   - Testes automatizados
+   - Build e deploy
 
 Cada arquivo contém:
-- Prompt utilizado (texto completo)
-- Resposta obtida da IA (texto completo)
-- Análise crítica (limitações identificadas)
-- Refinamento aplicado (mudanças baseadas na análise)
+- **Prompt utilizado** (texto completo)
+- **Resposta obtida da IA** (texto completo)
+- **Análise crítica** (limitações identificadas)
+- **Refinamento aplicado** (mudanças baseadas na análise)
 
 ## 5. Exemplos de uso da API
 
-### Cenário válido — Check-in e Checkout
+### Exemplo 1: Check-in e Checkout de Veículo
 
-**Check-in:**
+#### Check-in (Entrada)
+
+**Requisição:**
 ```bash
 curl -X POST http://localhost:3333/api/parking/checkin \
   -H "Content-Type: application/json" \
   -d '{"licensePlate": "ABC-1234"}'
 ```
 
-Resposta (HTTP 201):
+**Resposta (HTTP 201 - Created):**
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -169,12 +293,14 @@ Resposta (HTTP 201):
 }
 ```
 
-**Checkout (após 90 minutos):**
+#### Checkout (Saída com cálculo de tarifa)
+
+**Requisição:**
 ```bash
 curl -X POST http://localhost:3333/api/parking/550e8400-e29b-41d4-a716-446655440000/checkout
 ```
 
-Resposta (HTTP 200):
+**Resposta (HTTP 200 - OK, após 90 minutos):**
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -182,30 +308,22 @@ Resposta (HTTP 200):
   "entryTime": "2024-01-15T10:00:00Z",
   "exitTime": "2024-01-15T11:30:00Z",
   "durationMinutes": 90,
-  "totalAmount": 20.00,
+  "totalAmount": 15.00,
   "status": "Exited"
 }
 ```
 
-### Cenário inválido — Veículo já estacionado
+**Cálculo da tarifa:**
+- Taxa horária: R$10.00/hora
+- Duração: 90 minutos = 1.5 horas
+- Valor: 1.5 × 10.00 = R$15.00
+- Teto diário: R$80.00 (não aplicável neste caso)
 
-```bash
-curl -X POST http://localhost:3333/api/parking/checkin \
-  -H "Content-Type: application/json" \
-  -d '{"licensePlate": "ABC-1234"}'
-```
+### Exemplo 2: Fila de Lavagem com Máquina de Estados
 
-Resposta (HTTP 409):
-```json
-{
-  "error": "Veículo com placa ABC-1234 já está estacionado",
-  "statusCode": 409
-}
-```
+#### Criar Ordem de Lavagem
 
-### Cenário válido — Fila de lavagem
-
-**Criar ordem:**
+**Requisição:**
 ```bash
 curl -X POST http://localhost:3333/api/wash-orders \
   -H "Content-Type: application/json" \
@@ -215,7 +333,7 @@ curl -X POST http://localhost:3333/api/wash-orders \
   }'
 ```
 
-Resposta (HTTP 201):
+**Resposta (HTTP 201 - Created):**
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -230,14 +348,16 @@ Resposta (HTTP 201):
 }
 ```
 
-**Avançar status (Waiting → InProgress):**
+#### Avançar Status: Waiting → InProgress
+
+**Requisição:**
 ```bash
 curl -X PATCH http://localhost:3333/api/wash-orders/550e8400-e29b-41d4-a716-446655440002/status \
   -H "Content-Type: application/json" \
   -d '{"status": "InProgress"}'
 ```
 
-Resposta (HTTP 200):
+**Resposta (HTTP 200 - OK):**
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -253,19 +373,63 @@ Resposta (HTTP 200):
 }
 ```
 
-### Cenário inválido — Transição de status inválida
+#### Avançar Status: InProgress → Completed
 
+**Requisição:**
 ```bash
 curl -X PATCH http://localhost:3333/api/wash-orders/550e8400-e29b-41d4-a716-446655440002/status \
   -H "Content-Type: application/json" \
   -d '{"status": "Completed"}'
 ```
 
-Resposta (HTTP 422):
+**Resposta (HTTP 200 - OK):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440002",
+  "licensePlate": "ABC-1234",
+  "washService": {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "name": "Lavagem Simples",
+    "price": 30.00
+  },
+  "status": "Completed",
+  "createdAt": "2024-01-15T10:00:00Z",
+  "startedAt": "2024-01-15T10:05:00Z",
+  "completedAt": "2024-01-15T10:35:00Z"
+}
+```
+
+### Exemplo 3: Erro — Transição de Status Inválida
+
+**Requisição (tentativa de pular estado):**
+```bash
+curl -X PATCH http://localhost:3333/api/wash-orders/550e8400-e29b-41d4-a716-446655440002/status \
+  -H "Content-Type: application/json" \
+  -d '{"status": "Completed"}'
+```
+
+**Resposta (HTTP 422 - Unprocessable Entity):**
 ```json
 {
   "error": "Transição inválida: Waiting → Completed. Permitido: Waiting→InProgress→Completed",
   "statusCode": 422
+}
+```
+
+### Exemplo 4: Erro — Veículo Já Estacionado
+
+**Requisição (check-in duplicado):**
+```bash
+curl -X POST http://localhost:3333/api/parking/checkin \
+  -H "Content-Type: application/json" \
+  -d '{"licensePlate": "ABC-1234"}'
+```
+
+**Resposta (HTTP 409 - Conflict):**
+```json
+{
+  "error": "Veículo com placa ABC-1234 já está estacionado",
+  "statusCode": 409
 }
 ```
 
@@ -312,38 +476,10 @@ O workflow é acionado em:
 - Push para `main` ou `develop`
 - Pull requests para `main`
 
-## 8. Variáveis de Ambiente
-
-### Backend (`backend/.env`)
-
-```env
-# URL do projeto Supabase
-SUPABASE_URL=https://your-project-id.supabase.co
-
-# Chave de serviço do Supabase (service_role)
-SUPABASE_SERVICE_KEY=your-service-role-key-here
-
-# Porta do servidor (padrão: 3333)
-PORT=3333
-
-# Taxa horária de estacionamento em reais (padrão: 10.00)
-HOURLY_RATE=10.00
-
-# Teto máximo de cobrança diária em reais (padrão: 80.00)
-DAILY_RATE_CAP=80.00
-```
-
-### Frontend (`frontend/.env`)
-
-```env
-# URL base da API backend
-VITE_API_URL=http://localhost:3333
-```
-
-## 9. Contribuindo
+## 8. Contribuindo
 
 Este é um projeto acadêmico focado em demonstrar o processo de desenvolvimento com IA. Contribuições são bem-vindas!
 
-## 10. Licença
+## 9. Licença
 
 MIT
