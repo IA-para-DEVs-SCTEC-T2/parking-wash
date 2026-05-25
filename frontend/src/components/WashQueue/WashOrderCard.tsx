@@ -1,90 +1,82 @@
-import { useState } from 'react';
-import { WashOrder, WashOrderStatus } from '../../types/washOrders';
-import { updateWashOrderStatus } from '../../api/washOrders';
+import { useState } from 'react'
+import { WashOrder, WashOrderStatus } from '../../types/washOrders'
+import { updateWashOrderStatus } from '../../api/washOrders'
+import './WashOrderCard.css'
 
 interface WashOrderCardProps {
-  order: WashOrder;
-  onStatusUpdated: () => void;
+  order: WashOrder
+  onStatusUpdated: () => void
 }
 
-export function WashOrderCard({ order, onStatusUpdated }: WashOrderCardProps): JSX.Element {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function WashOrderCard({ order, onStatusUpdated }: WashOrderCardProps): JSX.Element {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const getNextStatus = (): WashOrderStatus | null => {
-    if (order.status === 'Waiting') return 'InProgress';
-    if (order.status === 'InProgress') return 'Completed';
-    return null;
-  };
+    if (order.status === 'Waiting') return 'InProgress'
+    if (order.status === 'InProgress') return 'Completed'
+    return null
+  }
 
   const getButtonLabel = (): string => {
-    if (order.status === 'Waiting') return 'Iniciar';
-    if (order.status === 'InProgress') return 'Concluir';
-    return 'Concluído';
-  };
+    if (order.status === 'Waiting') return 'Iniciar'
+    if (order.status === 'InProgress') return 'Concluir'
+    return 'Concluído'
+  }
 
   const handleStatusUpdate = async () => {
-    const nextStatus = getNextStatus();
-    if (!nextStatus) return;
+    const nextStatus = getNextStatus()
+    if (!nextStatus) return
 
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     try {
-      await updateWashOrderStatus(order.id, nextStatus);
-      onStatusUpdated();
+      await updateWashOrderStatus(order.id, nextStatus)
+      onStatusUpdated()
     } catch (err: unknown) {
-      const errorMsg = err && typeof err === 'object' && 'error' in err
-        ? (err as { error: string }).error
-        : 'Erro inesperado. Tente novamente.';
-      setError(errorMsg);
+      let errorMsg = 'Erro inesperado. Tente novamente.'
+      
+      if (err instanceof Error) {
+        errorMsg = err.message
+      } else if (err && typeof err === 'object' && 'error' in err) {
+        errorMsg = (err as { error: string }).error
+      }
+      
+      setError(errorMsg)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const isButtonDisabled = order.status === 'Completed' || loading;
+  const isButtonDisabled = order.status === 'Completed' || loading
 
   return (
-    <div
-      style={{
-        border: '1px solid #ddd',
-        borderRadius: '4px',
-        padding: '12px',
-        marginBottom: '10px',
-        backgroundColor: '#f9f9f9',
-      }}
-    >
-      <div style={{ marginBottom: '8px' }}>
-        <strong>Placa:</strong> {order.licensePlate}
-      </div>
-      <div style={{ marginBottom: '8px' }}>
-        <strong>Serviço:</strong> {order.washService.name} - R$ {order.washService.price.toFixed(2)}
-      </div>
-      <div style={{ marginBottom: '8px' }}>
-        <strong>Status:</strong> {order.status}
-      </div>
-      <div style={{ marginBottom: '12px' }}>
-        <strong>Criado em:</strong> {new Date(order.createdAt).toLocaleString('pt-BR')}
+    <div className="wash-order-card">
+      <div className="order-info">
+        <div className="info-row">
+          <strong>Placa:</strong> <span className="plate">{order.licensePlate}</span>
+        </div>
+        <div className="info-row">
+          <strong>Serviço:</strong> {order.washService.name} - R$ {order.washService.price.toFixed(2)}
+        </div>
+        <div className="info-row">
+          <strong>Status:</strong> <span className="status">{order.status}</span>
+        </div>
+        <div className="info-row">
+          <strong>Criado em:</strong> {new Date(order.createdAt).toLocaleString('pt-BR')}
+        </div>
       </div>
 
-      {error && <div style={{ color: 'red', marginBottom: '10px', fontSize: '0.9em' }}>{error}</div>}
+      {error && <div className="error-message">{error}</div>}
 
       <button
         onClick={handleStatusUpdate}
         disabled={isButtonDisabled}
-        style={{
-          padding: '6px 12px',
-          backgroundColor: isButtonDisabled ? '#ccc' : '#28a745',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: isButtonDisabled ? 'not-allowed' : 'pointer',
-          fontSize: '0.9em',
-        }}
+        className="action-button"
       >
         {loading ? 'Atualizando...' : getButtonLabel()}
       </button>
     </div>
-  );
+  )
 }

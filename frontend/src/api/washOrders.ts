@@ -1,12 +1,10 @@
-import { apiGet, apiPost, apiPatch } from './client';
+import { apiGet, apiPost, apiPatch } from './client'
 import {
   WashOrder,
   WashOrderStatus,
   CreateWashOrderRequest,
   UpdateWashOrderStatusRequest,
-} from '../types/washOrders';
-
-const API_BASE_URL = '/api/wash-orders';
+} from '../types/washOrders'
 
 export async function createWashOrder(
   licensePlate: string,
@@ -15,21 +13,21 @@ export async function createWashOrder(
   const body: CreateWashOrderRequest = {
     licensePlate,
     washServiceId,
-  };
-  return apiPost<WashOrder>(API_BASE_URL, body);
+  }
+  return apiPost<WashOrder>('/api/wash-orders', body)
 }
 
 export async function updateWashOrderStatus(
   id: string,
   status: WashOrderStatus
 ): Promise<WashOrder> {
-  const body: UpdateWashOrderStatusRequest = { status };
-  return apiPatch<WashOrder>(`${API_BASE_URL}/${id}/status`, body);
+  const body: UpdateWashOrderStatusRequest = { status }
+  return apiPatch<WashOrder>(`/api/wash-orders/${id}/status`, body)
 }
 
 export async function listWashOrders(status?: WashOrderStatus): Promise<WashOrder[]> {
   const url = status
-    ? `${API_BASE_URL}?status=${status}`
-    : API_BASE_URL;
-  return apiGet<WashOrder[]>(url);
+    ? `/api/wash-orders?status=${status}`
+    : '/api/wash-orders'
+  return apiGet<WashOrder[]>(url)
 }

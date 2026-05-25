@@ -141,7 +141,15 @@ export class ParkingService {
         );
       }
 
-      return updatedRecord as CheckOutResponse;
+      return {
+        id: updatedRecord.id,
+        licensePlate: updatedRecord.license_plate,
+        entryTime: updatedRecord.entry_time,
+        exitTime: updatedRecord.exit_time,
+        durationMinutes: updatedRecord.duration_minutes,
+        totalAmount: updatedRecord.total_amount,
+        status: updatedRecord.status,
+      };
     } catch (error) {
       if (
         error instanceof NotFoundError ||
@@ -203,7 +211,16 @@ export class ParkingService {
         );
       }
 
-      return records as ParkingRecord[];
+      // Transform snake_case to camelCase
+      return records.map(record => ({
+        id: record.id,
+        licensePlate: record.license_plate,
+        entryTime: record.entry_time,
+        exitTime: record.exit_time,
+        durationMinutes: record.duration_minutes,
+        totalAmount: record.total_amount,
+        status: record.status,
+      })) as ParkingRecord[];
     } catch (error) {
       if (error instanceof ValidationError || error instanceof ServiceUnavailableError) {
         throw error;

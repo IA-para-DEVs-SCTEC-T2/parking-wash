@@ -19,19 +19,19 @@ export interface ParkingRecord {
   id: string;
 
   /** Vehicle license plate in Brazilian format (legacy: AAA-9999 or Mercosul: AAA9A99) */
-  license_plate: string;
+  licensePlate: string;
 
   /** ISO 8601 UTC timestamp of vehicle entry */
-  entry_time: string;
+  entryTime: string;
 
   /** ISO 8601 UTC timestamp of vehicle exit, or null if still parked */
-  exit_time: string | null;
+  exitTime: string | null;
 
   /** Duration of parking in minutes, or null if still parked */
-  duration_minutes: number | null;
+  durationMinutes: number | null;
 
   /** Total amount charged in Brazilian Real, or null if still parked */
-  total_amount: number | null;
+  totalAmount: number | null;
 
   /** Current status of the parking record */
   status: ParkingStatus;
@@ -66,10 +66,27 @@ export interface CheckInResponse {
 
 /**
  * Response payload for successful check-out operation
- * Extends ParkingRecord with guaranteed total_amount (non-null after checkout)
  * Returned to the client after vehicle exit and tariff calculation
  */
-export interface CheckOutResponse extends ParkingRecord {
-  /** Total amount is guaranteed to be a number after checkout */
-  total_amount: number;
+export interface CheckOutResponse {
+  /** Unique identifier of the parking record */
+  id: string;
+
+  /** Vehicle license plate */
+  licensePlate: string;
+
+  /** ISO 8601 UTC timestamp of vehicle entry */
+  entryTime: string;
+
+  /** ISO 8601 UTC timestamp of vehicle exit */
+  exitTime: string | null;
+
+  /** Duration of parking in minutes */
+  durationMinutes: number | null;
+
+  /** Total amount charged in Brazilian Real */
+  totalAmount: number;
+
+  /** Current status (always 'Exited' for check-out response) */
+  status: ParkingStatus;
 }

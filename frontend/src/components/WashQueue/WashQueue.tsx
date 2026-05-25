@@ -1,63 +1,69 @@
-import { useState, useCallback } from 'react';
-import { WashOrder } from '../../types/washOrders';
-import { listWashOrders } from '../../api/washOrders';
-import { useAutoRefresh } from '../../hooks/useAutoRefresh';
-import { NewOrderForm } from './NewOrderForm';
-import { StatusColumn } from './StatusColumn';
+import { useState, useCallback } from 'react'
+import { WashOrder } from '../../types/washOrders'
+import { listWashOrders } from '../../api/washOrders'
+import { useAutoRefresh } from '../../hooks/useAutoRefresh'
+import NewOrderForm from './NewOrderForm'
+import StatusColumn from './StatusColumn'
+import './WashQueue.css'
 
-export function WashQueue(): JSX.Element {
-  const [orders, setOrders] = useState<WashOrder[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function WashQueue(): JSX.Element {
+  const [orders, setOrders] = useState<WashOrder[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     try {
-      const data = await listWashOrders();
-      setOrders(data);
+      const data = await listWashOrders()
+      setOrders(data)
     } catch (err: unknown) {
-      const errorMsg = err && typeof err === 'object' && 'error' in err
-        ? (err as { error: string }).error
-        : 'Erro ao carregar ordens';
-      setError(errorMsg);
+      let errorMsg = 'Erro ao carregar ordens'
+      
+      if (err instanceof Error) {
+        errorMsg = err.message
+      } else if (err && typeof err === 'object' && 'error' in err) {
+        errorMsg = (err as { error: string }).error
+      }
+      
+      setError(errorMsg)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   // Auto-refresh every 30 seconds
-  useAutoRefresh(fetchOrders, 30000);
+  useAutoRefresh(fetchOrders, 30000)
 
   const handleOrderCreated = () => {
-    fetchOrders();
-  };
+    fetchOrders()
+  }
 
   const handleOrderUpdated = () => {
-    fetchOrders();
-  };
+    fetchOrders()
+  }
 
   // Group orders by status
-  const waitingOrders = orders.filter((o) => o.status === 'Waiting');
-  const inProgressOrders = orders.filter((o) => o.status === 'InProgress');
-  const completedOrders = orders.filter((o) => o.status === 'Completed');
+  const waitingOrders = orders.filter((o) => o.status === 'Waiting')
+  const inProgressOrders = orders.filter((o) => o.status === 'InProgress')
+  const completedOrders = orders.filter((o) => o.status === 'Completed')
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="wash-queue">
       <h1>Fila de Lavagem</h1>
 
       {error && (
-        <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '12px', borderRadius: '4px', marginBottom: '20px' }}>
+        <div className="error-message">
           {error}
         </div>
       )}
 
       <NewOrderForm onOrderCreated={handleOrderCreated} />
 
-      {loading && <div style={{ textAlign: 'center', color: '#666' }}>Carregando...</div>}
+      {loading && <div className="loading">Carregando...</div>}
 
-      <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
+      <div className="status-columns">
         <StatusColumn
           status="Waiting"
           orders={waitingOrders}
@@ -75,5 +81,5 @@ export function WashQueue(): JSX.Element {
         />
       </div>
     </div>
-  );
+  )
 }

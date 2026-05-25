@@ -476,10 +476,37 @@ O workflow é acionado em:
 - Push para `main` ou `develop`
 - Pull requests para `main`
 
-## 8. Contribuindo
+## 8. Histórico de Mudanças
+
+### v1.1.0 - Correções de Integração Frontend-Backend
+
+**Mudanças principais:**
+
+- ✅ **Normalização de tipos**: Convertido todos os tipos de resposta da API para camelCase (licensePlate, entryTime, etc.)
+- ✅ **Tratamento de erros robusto**: Melhorado tratamento de erros em todos os componentes do frontend
+- ✅ **Componentes do ParkingPanel**: Criados componentes faltantes (CheckInForm, VehicleCard, ElapsedTimer, CheckoutModal, ParkingPanel)
+- ✅ **Suporte a WebSocket**: Adicionado suporte ao pacote `ws` para Node.js 20
+- ✅ **Arquivos de entrada**: Criados main.tsx, App.tsx, index.html para o frontend
+- ✅ **Tipos TypeScript**: Criados tipos para parking e washOrders no frontend
+
+**Arquivos modificados:**
+- `backend/src/modules/parking/parking.types.ts` — Normalização para camelCase
+- `backend/src/modules/parking/parking.service.ts` — Transformação de snake_case para camelCase
+- `backend/src/db/supabase.ts` — Adicionado suporte a WebSocket
+- `frontend/src/components/ParkingPanel/*` — Novos componentes
+- `frontend/src/App.tsx` — Componente principal
+- `frontend/src/main.tsx` — Ponto de entrada
+
+**Testes realizados:**
+- ✅ Check-in com placa válida
+- ✅ Listagem de veículos estacionados
+- ✅ Tratamento de erros de API
+- ✅ Recompilação do frontend com HMR
+
+## 9. Contribuindo
 
 Este é um projeto acadêmico focado em demonstrar o processo de desenvolvimento com IA. Contribuições são bem-vindas!
 
-## 9. Licença
+## 10. Licença
 
 MIT

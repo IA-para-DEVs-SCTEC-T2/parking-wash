@@ -1,8 +1,6 @@
-import { apiGet } from './client';
-import { WashService } from '../types/washOrders';
-
-const API_BASE_URL = '/api/wash-services';
+import { apiGet } from './client'
+import { WashService } from '../types/washOrders'
 
 export async function listWashServices(): Promise<WashService[]> {
-  return apiGet<WashService[]>(API_BASE_URL);
+  return apiGet<WashService[]>('/api/wash-services')
 }

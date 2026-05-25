@@ -1,67 +1,46 @@
-interface ApiError {
-  error: string;
-  statusCode: number;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333'
+
+export interface ApiError {
+  error: string
+  statusCode: number
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
-  const contentType = response.headers.get('content-type');
-  
   if (!response.ok) {
-    let errorData: ApiError;
-    
-    if (contentType?.includes('application/json')) {
-      errorData = await response.json();
-    } else {
-      errorData = {
-        error: `HTTP ${response.status}`,
-        statusCode: response.status,
-      };
-    }
-    
-    throw {
-      error: errorData.error || 'Erro inesperado. Tente novamente.',
+    const error: ApiError = {
+      error: `HTTP ${response.status}`,
       statusCode: response.status,
-    };
+    }
+    try {
+      const data = await response.json()
+      error.error = data.error || data.message || error.error
+    } catch {
+      // Ignore JSON parse errors
+    }
+    throw error
   }
-  
-  if (contentType?.includes('application/json')) {
-    return response.json();
-  }
-  
-  return {} as T;
+  return response.json()
 }
 
-export async function apiGet<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  
-  return handleResponse<T>(response);
+export async function apiGet<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`)
+  return handleResponse<T>(response)
 }
 
-export async function apiPost<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
+export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
-  
-  return handleResponse<T>(response);
+  })
+  return handleResponse<T>(response)
 }
 
-export async function apiPatch<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
-  
-  return handleResponse<T>(response);
+  })
+  return handleResponse<T>(response)
 }
