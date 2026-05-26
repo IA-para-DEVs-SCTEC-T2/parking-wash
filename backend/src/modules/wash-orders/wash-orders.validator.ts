@@ -37,11 +37,12 @@ const uuidSchema = z
 
 /**
  * Schema for creating a new wash order
- * Validates: licensePlate (required, valid format) and washServiceId (required, valid UUID)
+ * Validates: licensePlate (required, valid format), washServiceId (required, valid UUID), and vehicleTypeId (optional, valid UUID)
  */
 export const createWashOrderSchema = z.object({
   licensePlate: licensePlateSchema,
   washServiceId: uuidSchema,
+  vehicleTypeId: uuidSchema.optional(),
 });
 
 /**

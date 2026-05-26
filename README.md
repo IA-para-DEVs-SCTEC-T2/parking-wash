@@ -1,27 +1,45 @@
-# ParkingWash
+# 🚗 ParkingWash - Sistema Inteligente de Estacionamento e Lavação
 
-Sistema web de gerenciamento integrado de estacionamento e lavação de veículos.
+![Status](https://img.shields.io/badge/status-active-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue) ![Node](https://img.shields.io/badge/node-20%2B-green) ![TypeScript](https://img.shields.io/badge/typescript-5.0%2B-blue)
 
-## 1. Visão Geral
+## 📌 Visão Geral
 
-O **ParkingWash** é um sistema completo para gerenciar operações de estacionamento e serviços de lavação de veículos. Resolve o problema de controle manual de entrada/saída de veículos e fila de lavagem, que é propenso a erros e não gera dados para análise.
+**ParkingWash** é um sistema web completo para gerenciar operações de estacionamento e serviços de lavação de veículos, desenvolvido com foco em **demonstrar o processo de desenvolvimento com IA**.
 
-**Solução:** API REST com cálculo automático de tarifa, controle de fila de lavagem com máquina de estados, e interface web intuitiva.
+### 🎯 Problema Resolvido
 
-### Tecnologias principais
+Estacionamentos e serviços de lavação enfrentam desafios críticos:
+- ❌ Controle manual de entrada/saída de veículos (propenso a erros)
+- ❌ Fila de lavagem desorganizada sem rastreamento
+- ❌ Cálculo manual de tarifas (inconsistente e lento)
+- ❌ Falta de dados para análise e otimização
 
-- **Backend:** Node.js + Express + TypeScript
-- **Frontend:** React + Vite + TypeScript
-- **Banco de dados:** Supabase (PostgreSQL gerenciado)
-- **Validação:** Zod
-- **Testes:** Jest + fast-check (property-based testing)
-- **CI/CD:** GitHub Actions
+### ✅ Solução Entregue
 
-### Funcionalidades principais
+- 🚀 **API REST** com cálculo automático de tarifa (taxa horária + teto diário)
+- 📊 **Fila de lavagem** com máquina de estados (Waiting → InProgress → Completed)
+- 🎨 **Interface web intuitiva** em React com atualização em tempo real
+- 🧪 **Testes automatizados** com property-based testing (fast-check)
+- 🔄 **Pipeline CI/CD** com GitHub Actions
+- 📚 **Documentação completa** do processo de desenvolvimento com IA
+
+### 🛠️ Tecnologias Principais
+
+| Camada | Tecnologia | Justificativa |
+|--------|-----------|---------------|
+| **Backend** | Node.js + Express + TypeScript | Simplicidade, performance, tipagem forte |
+| **Frontend** | React + Vite + TypeScript | SPA rápida, HMR, tipagem |
+| **Banco de Dados** | Supabase (PostgreSQL) | Gerenciado, sem configuração de servidor |
+| **Validação** | Zod | Type-safe, mensagens de erro claras |
+| **Testes** | Jest + fast-check | Unitários + property-based testing |
+| **CI/CD** | GitHub Actions | Integrado, sem custo |
+
+### ✨ Funcionalidades Principais
 
 - ✅ Check-in e checkout de veículos com cálculo automático de tarifa
-- ✅ Fila de lavagem com controle de status (Waiting → InProgress → Completed)
-- ✅ Testes automatizados com property-based testing (fast-check)
+- ✅ Fila de lavagem com controle de status e máquina de estados
+- ✅ Seleção de tipo de veículo (impacta na tarifa)
+- ✅ Testes automatizados com property-based testing
 - ✅ Pipeline CI/CD com GitHub Actions
 - ✅ Documentação completa do processo de desenvolvimento com IA
 
@@ -88,9 +106,51 @@ npm run dev
 3. Executar o script DDL em `backend/src/db/schema.sql` no SQL Editor do Supabase
 4. Executar o script de seed em `backend/src/db/seed.sql` para popular os serviços de lavagem
 
-## 3. Arquitetura
+## 3. 🏗️ Arquitetura
 
-### Visão geral da arquitetura
+### Visão Geral da Arquitetura
+
+```mermaid
+graph TB
+    subgraph Client["🎨 Client Layer"]
+        Browser["Web Browser"]
+        React["React App<br/>Vite + TypeScript"]
+    end
+
+    subgraph API["🔌 API Layer"]
+        Express["Express Server<br/>Node.js + TypeScript"]
+        Middleware["Middleware<br/>Validation + Error Handling"]
+    end
+
+    subgraph Business["💼 Business Logic Layer"]
+        Parking["Parking Domain<br/>Check-in/Checkout"]
+        WashOrders["Wash Orders Domain<br/>Queue Management"]
+        WashServices["Wash Services Domain<br/>Service Catalog"]
+    end
+
+    subgraph Data["💾 Data Layer"]
+        Supabase["Supabase<br/>PostgreSQL"]
+        Tables["Tables:<br/>parking, wash_orders,<br/>wash_services, vehicle_types"]
+    end
+
+    Browser -->|HTTP/REST| React
+    React -->|API Calls| Express
+    Express -->|Route| Middleware
+    Middleware -->|Validate| Parking
+    Middleware -->|Validate| WashOrders
+    Middleware -->|Validate| WashServices
+    Parking -->|Query| Supabase
+    WashOrders -->|Query| Supabase
+    WashServices -->|Query| Supabase
+    Supabase -->|Store| Tables
+
+    style Client fill:#61dafb,stroke:#333,stroke-width:2px,color:#000
+    style API fill:#68a063,stroke:#333,stroke-width:2px,color:#fff
+    style Business fill:#f7df1e,stroke:#333,stroke-width:2px,color:#000
+    style Data fill:#336791,stroke:#333,stroke-width:2px,color:#fff
+```
+
+### Diagrama ASCII (Alternativo)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -224,18 +284,76 @@ parking-wash/
 └── README.md
 ```
 
-## 4. Uso de IA
+## 4. 🤖 Uso de IA no Desenvolvimento
 
-Este projeto foi desenvolvido com foco em **processo de desenvolvimento com IA**, não apenas no código. O objetivo é documentar como a IA foi utilizada em cada etapa do desenvolvimento, incluindo os prompts, respostas, análises críticas e refinamentos.
+Este projeto foi desenvolvido com foco em **demonstrar o processo de desenvolvimento com IA**, não apenas no código final. Cada etapa foi documentada com prompts, respostas, análises críticas e refinamentos.
 
-### Padrões de prompting aplicados
+### 📊 Mapeamento de Etapas de IA
 
-- **Prompt estruturado**: contexto + restrições + formato de saída esperado
-- **Prompt iterativo**: análise crítica e refinamento baseado em feedback
-- **Prompt com exemplos**: demonstração de padrões esperados
-- **Prompt com restrições**: limitações e regras de negócio
+| Etapa | Ferramentas IA | Objetivo | Resultado | Documentação |
+|-------|---|----------|-----------|--------------|
+| **Especificação** | Claude (Kiro) | Definir requisitos e casos de uso | Spec estruturada com requirements.md | `.kiro/specs/parking-wash/` |
+| **Arquitetura** | Claude (Kiro) | Design de domínios e estrutura | 3 domínios independentes (parking, wash-orders, wash-services) | `docs/prompts/01-arquitetura.md` |
+| **Geração de Código** | Claude (Kiro) | Implementar endpoints e serviços | Backend completo com validação Zod | `docs/prompts/02-backend.md` |
+| **Testes** | Claude (Kiro) | Estratégia de testes e cobertura | Jest + fast-check (property-based) | `docs/prompts/03-testes.md` |
+| **Frontend** | Claude (Kiro) | Componentes React e integração | SPA com React + Vite | `docs/prompts/04-frontend.md` |
+| **Refatoração** | Claude (Kiro) | Correção de bugs e otimizações | Fixes de 503, UUID, integração | Seção "Casos de Refinamento" |
+| **Pipeline** | Claude (Kiro) | CI/CD com GitHub Actions | Workflow automático | `docs/prompts/05-cicd.md` |
+| **Documentação** | Claude (Kiro) | README e guias de uso | Este arquivo | README.md |
 
-### Ciclos de refinamento documentados
+### 🎯 Padrões de Prompting Aplicados
+
+#### 1. **Prompt Estruturado** (Contexto + Restrições + Formato)
+Usado na fase de arquitetura para definir domínios.
+
+**Exemplo real:**
+```
+Contexto: Sistema de estacionamento com fila de lavação
+Restrições: 
+- Máquina de estados para transições válidas
+- Validação com Zod
+- Sem dependências externas desnecessárias
+Formato esperado: 
+- Tipos TypeScript
+- Endpoints REST
+- Serviços com lógica de negócio
+```
+
+**Resultado:** Arquitetura de 3 domínios independentes com máquina de estados implementada corretamente.
+
+#### 2. **Prompt Iterativo** (Análise Crítica + Refinamento)
+Usado quando a IA gerava código que precisava de ajustes.
+
+**Exemplo:** Erro 503 no checkout
+- ❌ **Problema:** `PricingService` importado como `.js` falhava em runtime
+- 🔍 **Análise:** Módulo não estava sendo carregado corretamente
+- ✅ **Solução:** Mover `PricingService` inline em `parking.service.ts`
+
+#### 3. **Prompt com Exemplos** (Demonstração de Padrões)
+Usado para gerar componentes React consistentes.
+
+**Exemplo:** Componentes de formulário
+```typescript
+// Padrão esperado:
+- useEffect para fetch de dados
+- useState para estado local
+- Validação com Zod
+- Tratamento de erros com try/catch
+```
+
+#### 4. **Prompt com Restrições** (Limitações e Regras)
+Usado para implementar lógica de negócio.
+
+**Exemplo:** Cálculo de tarifa
+```
+Restrições:
+- Taxa horária: R$10.00/hora
+- Teto diário: R$80.00
+- Arredondamento: 2 casas decimais
+- Validação: duração > 0
+```
+
+### 📚 Ciclos de Refinamento Documentados
 
 Cada etapa do desenvolvimento foi documentada em `docs/prompts/`:
 
@@ -270,7 +388,185 @@ Cada arquivo contém:
 - **Análise crítica** (limitações identificadas)
 - **Refinamento aplicado** (mudanças baseadas na análise)
 
-## 5. Exemplos de uso da API
+## 5. 🔧 Casos de Refinamento - Erros da IA e Soluções
+
+Esta seção documenta casos reais onde a IA gerou código que precisou ser corrigido ou refinado, demonstrando o processo iterativo de desenvolvimento.
+
+### Caso 1: Erro 503 Service Unavailable no Checkout
+
+#### 🔴 Problema Identificado
+Endpoint `POST /api/parking/:id/checkout` retornava **HTTP 503 Service Unavailable** ao tentar calcular a tarifa.
+
+#### 🔍 Análise da Causa
+A IA gerou um arquivo `pricing.service.ts` com a classe `PricingService`, mas o import estava usando extensão `.js`:
+```typescript
+// ❌ ERRADO - Falha em runtime
+import { PricingService } from './services/pricing.service.js';
+```
+
+O TypeScript compilava sem erros, mas em runtime o módulo não era encontrado porque:
+- O arquivo era `.ts`, não `.js`
+- O tsx não conseguia resolver a extensão `.js` em tempo de execução
+
+#### ✅ Solução Aplicada
+Mover a classe `PricingService` diretamente para `parking.service.ts`, eliminando a dependência de import:
+
+```typescript
+// ✅ CORRETO - Sem import externo
+class PricingService {
+  calculateHourlyRate(durationMinutes: number, hourlyRate: number): number {
+    const hours = durationMinutes / 60;
+    return parseFloat((hours * hourlyRate).toFixed(2));
+  }
+
+  calculateDailyRate(totalAmount: number, dailyRateCap: number): number {
+    return Math.min(totalAmount, dailyRateCap);
+  }
+}
+```
+
+#### 📚 Aprendizado
+- **Problema:** A IA não considerou que imports com extensão `.js` falham em runtime com TypeScript/tsx
+- **Solução:** Quando há dúvida sobre imports, é melhor inlinar o código ou usar imports relativos sem extensão
+- **Lição:** Sempre testar imports em runtime, não apenas compilação TypeScript
+
+---
+
+### Caso 2: Erro 422 - UUID Inválido na Fila de Lavagem
+
+#### 🔴 Problema Identificado
+Ao criar uma ordem de lavagem, o frontend enviava IDs de tipo de veículo como strings simples (`'1'`, `'2'`, `'3'`), causando erro:
+```json
+{
+  "error": "ID deve ser um UUID válido",
+  "statusCode": 422
+}
+```
+
+#### 🔍 Análise da Causa
+A IA gerou um componente `NewOrderForm.tsx` com tipos de veículo hardcoded:
+```typescript
+// ❌ ERRADO - IDs não são UUIDs válidos
+const VEHICLE_TYPES = [
+  { id: '1', name: 'Carro' },
+  { id: '2', name: 'Moto' },
+  { id: '3', name: 'Caminhão' }
+];
+```
+
+O backend validava com Zod que o ID deveria ser um UUID válido, mas o frontend enviava strings simples.
+
+#### ✅ Solução Aplicada
+Criar um endpoint `GET /api/vehicle-types` e fazer o frontend buscar os tipos reais do banco:
+
+**Backend (já existia):**
+```typescript
+// GET /api/vehicle-types
+app.get('/api/vehicle-types', async (req, res) => {
+  const types = await vehicleTypeService.listActive();
+  res.json(types); // Retorna UUIDs válidos do banco
+});
+```
+
+**Frontend (novo):**
+```typescript
+// frontend/src/api/vehicleTypes.ts
+export async function listVehicleTypes() {
+  const response = await client.get('/vehicle-types');
+  return response.data;
+}
+
+// NewOrderForm.tsx
+const [vehicleTypes, setVehicleTypes] = useState([]);
+
+useEffect(() => {
+  listVehicleTypes().then(setVehicleTypes);
+}, []);
+```
+
+#### 📚 Aprendizado
+- **Problema:** A IA gerou dados hardcoded sem considerar que o backend esperava UUIDs do banco
+- **Solução:** Sempre buscar dados dinâmicos do backend em vez de hardcodear
+- **Lição:** Frontend e backend devem estar sincronizados; dados hardcoded causam inconsistências
+
+---
+
+### Caso 3: Vehicle Type Selection Não Era Enviado
+
+#### 🔴 Problema Identificado
+Usuário selecionava o tipo de veículo no formulário, mas o backend não recebia o `vehicleTypeId`.
+
+#### 🔍 Análise da Causa
+O formulário tinha um `<select>` para tipo de veículo, mas ao submeter, o valor não era incluído no payload:
+```typescript
+// ❌ ERRADO - vehicleTypeId não era enviado
+const payload = {
+  licensePlate: formData.licensePlate,
+  washServiceId: formData.washServiceId
+  // ❌ Faltava: vehicleTypeId
+};
+```
+
+#### ✅ Solução Aplicada
+Adicionar `vehicleTypeId` em toda a cadeia:
+
+1. **Frontend - Tipo:**
+```typescript
+export interface CreateWashOrderRequest {
+  licensePlate: string;
+  washServiceId: string;
+  vehicleTypeId?: string; // ✅ Adicionado
+}
+```
+
+2. **Frontend - API:**
+```typescript
+export async function createWashOrder(
+  licensePlate: string,
+  washServiceId: string,
+  vehicleTypeId?: string
+) {
+  return client.post('/wash-orders', {
+    licensePlate,
+    washServiceId,
+    vehicleTypeId // ✅ Enviado
+  });
+}
+```
+
+3. **Backend - Validator:**
+```typescript
+const createWashOrderSchema = z.object({
+  licensePlate: z.string(),
+  washServiceId: z.string().uuid(),
+  vehicleTypeId: z.string().uuid().optional() // ✅ Aceita
+});
+```
+
+4. **Backend - Service:**
+```typescript
+async createWashOrder(
+  licensePlate: string,
+  washServiceId: string,
+  vehicleTypeId?: string
+) {
+  // ✅ Usa vehicleTypeId
+  return db.insert('wash_orders', {
+    licensePlate,
+    washServiceId,
+    vehicleTypeId
+  });
+}
+```
+
+#### 📚 Aprendizado
+- **Problema:** A IA não propagou o campo através de toda a cadeia frontend-backend
+- **Solução:** Sempre verificar que dados fluem corretamente de UI → API → Banco
+- **Lição:** Usar TypeScript end-to-end para garantir que tipos sejam consistentes
+
+---
+
+## 6. 📝 Exemplos de Uso da API
 
 ### Exemplo 1: Check-in e Checkout de Veículo
 
@@ -433,7 +729,7 @@ curl -X POST http://localhost:3333/api/parking/checkin \
 }
 ```
 
-## 6. Testes
+## 7. 🧪 Testes
 
 ### Backend
 
@@ -448,6 +744,9 @@ npm test -- --coverage
 
 # Lint
 npm run lint
+
+# Watch mode (desenvolvimento)
+npm test -- --watch
 ```
 
 ### Frontend
@@ -457,9 +756,21 @@ cd frontend
 
 # Executar testes
 npm test
+
+# Com cobertura
+npm test -- --coverage
 ```
 
-## 7. CI/CD
+### Estratégia de Testes
+
+- **Unitários:** Jest com mocks do Supabase
+- **Property-Based:** fast-check para validar propriedades matemáticas (ex: tarifa sempre ≥ 0)
+- **Integração:** Testes de fluxo completo (check-in → checkout)
+- **E2E:** Testes manuais via Postman/Insomnia
+
+---
+
+## 8. 🚀 CI/CD
 
 O projeto inclui um workflow GitHub Actions que:
 
@@ -476,7 +787,23 @@ O workflow é acionado em:
 - Push para `main` ou `develop`
 - Pull requests para `main`
 
-## 8. Histórico de Mudanças
+### Arquivo de Configuração
+
+Veja `.github/workflows/ci.yml` para detalhes completos.
+
+---
+
+## 9. 📋 Histórico de Mudanças
+
+### v1.2.0 - Documentação Completa com IA
+
+**Mudanças principais:**
+
+- ✅ **README melhorado:** Adicionadas seções de IA, casos de refinamento, aprendizados
+- ✅ **Diagrama Mermaid:** Visualização clara da arquitetura
+- ✅ **Casos de refinamento:** 3 bugs reais documentados com soluções
+- ✅ **Roadmap:** Melhorias futuras organizadas por prazo
+- ✅ **Aprendizados:** Reflexão sobre uso de IA em cada etapa
 
 ### v1.1.0 - Correções de Integração Frontend-Backend
 
@@ -503,10 +830,206 @@ O workflow é acionado em:
 - ✅ Tratamento de erros de API
 - ✅ Recompilação do frontend com HMR
 
-## 9. Contribuindo
+---
+
+## 9. 🚀 Melhorias Futuras e Roadmap
+
+### Curto Prazo (1-2 sprints)
+- [ ] **Autenticação e Autorização** - Adicionar JWT para controlar acesso
+- [ ] **Dashboard de Relatórios** - Gráficos de ocupação, receita, tempo médio de lavagem
+- [ ] **Notificações em Tempo Real** - WebSocket para atualizar fila de lavagem
+- [ ] **Integração com FIPE** - Consultar valor do veículo por placa
+- [ ] **Recibos Digitais** - Gerar PDF de checkout com QR code
+
+### Médio Prazo (3-6 meses)
+- [ ] **Mobile App** - React Native para operadores de estacionamento
+- [ ] **Integração com Pagamento** - Stripe/PagSeguro para checkout online
+- [ ] **Agendamento de Lavagem** - Permitir reservas antecipadas
+- [ ] **Histórico de Veículos** - Rastrear visitas anteriores
+- [ ] **Preços Dinâmicos** - Ajustar tarifa por demanda/horário
+
+### Longo Prazo (6+ meses)
+- [ ] **Machine Learning** - Prever ocupação e otimizar preços
+- [ ] **IoT Integration** - Sensores de ocupação de vagas
+- [ ] **Multi-tenant** - Suportar múltiplos estacionamentos
+- [ ] **Análise Preditiva** - Recomendações de manutenção
+- [ ] **Marketplace** - Conectar com serviços de limpeza terceirizados
+
+---
+
+## 10. 💡 O Que Aprendi Ao Usar IA em Cada Etapa
+
+### 📋 Especificação
+**Aprendizado:** A IA é excelente em estruturar requisitos, mas precisa de feedback claro sobre prioridades.
+- ✅ Gerou casos de uso bem definidos
+- ⚠️ Precisei refinar o escopo para evitar feature creep
+- 💡 **Dica:** Use prompts com restrições explícitas ("máximo 3 domínios")
+
+### 🏗️ Arquitetura
+**Aprendizado:** A IA entende bem padrões de design, mas pode gerar over-engineering.
+- ✅ Sugeriu arquitetura de domínios independentes (excelente)
+- ⚠️ Propôs padrões complexos que não eram necessários
+- 💡 **Dica:** Peça por "simplicidade" e "sem abstrações desnecessárias"
+
+### 💻 Geração de Código
+**Aprendizado:** A IA gera código funcional, mas com bugs sutis em integração.
+- ✅ Endpoints REST bem estruturados
+- ⚠️ Imports com extensão `.js` falharam em runtime
+- 💡 **Dica:** Sempre testar em runtime, não apenas compilação
+
+### 🧪 Testes
+**Aprendizado:** A IA entende property-based testing, mas precisa de exemplos.
+- ✅ Gerou testes com fast-check bem estruturados
+- ⚠️ Faltaram casos extremos (valores negativos, strings vazias)
+- 💡 **Dica:** Forneça exemplos de casos extremos que devem ser testados
+
+### 🎨 Frontend
+**Aprendizado:** A IA gera componentes React funcionais, mas sem otimizações.
+- ✅ Componentes bem estruturados com hooks
+- ⚠️ Faltou tratamento de loading/error states
+- 💡 **Dica:** Peça explicitamente por "tratamento de erros" e "loading states"
+
+### 🔧 Refatoração
+**Aprendizado:** A IA é ótima em identificar problemas quando você aponta.
+- ✅ Sugeriu soluções elegantes para os 3 bugs
+- ⚠️ Não detectou os bugs automaticamente
+- 💡 **Dica:** Use a IA para refatorar, não para debugar (você precisa apontar o problema)
+
+### 🚀 Pipeline CI/CD
+**Aprendizado:** A IA entende workflows, mas precisa de contexto sobre o projeto.
+- ✅ Gerou GitHub Actions workflow funcional
+- ⚠️ Faltaram secrets e variáveis de ambiente
+- 💡 **Dica:** Especifique quais variáveis são necessárias
+
+### 📚 Documentação
+**Aprendizado:** A IA é excelente em documentação, mas precisa de estrutura.
+- ✅ Gerou README bem organizado
+- ⚠️ Faltaram exemplos reais e casos de refinamento
+- 💡 **Dica:** Peça por "exemplos reais" e "casos de erro"
+
+---
+
+## 11. 🎬 Demonstração em Vídeo
+
+📹 **[Assista ao vídeo de demonstração no YouTube](https://www.youtube.com/watch?v=PLACEHOLDER)**
+
+*Nota: Link será atualizado quando o vídeo for publicado*
+
+---
+
+## 12. 📊 Diagrama de Arquitetura Detalhado
+
+```mermaid
+graph TB
+    subgraph Frontend["🎨 Frontend (React + Vite)"]
+        UI["UI Components"]
+        Hooks["Custom Hooks"]
+        API_Client["API Client"]
+    end
+
+    subgraph Backend["🔧 Backend (Node.js + Express)"]
+        Router["Router"]
+        Controller["Controller"]
+        Service["Service"]
+        Validator["Validator"]
+    end
+
+    subgraph Database["💾 Database (Supabase)"]
+        Parking_Table["parking"]
+        WashOrders_Table["wash_orders"]
+        WashServices_Table["wash_services"]
+        VehicleTypes_Table["vehicle_types"]
+    end
+
+    subgraph Domains["📦 Domínios"]
+        Parking_Domain["Parking Domain"]
+        WashOrders_Domain["Wash Orders Domain"]
+        WashServices_Domain["Wash Services Domain"]
+    end
+
+    UI -->|HTTP REST| API_Client
+    API_Client -->|POST/GET/PATCH| Router
+    Router -->|Route| Controller
+    Controller -->|Validate| Validator
+    Validator -->|Process| Service
+    Service -->|Query| Database
+    
+    Parking_Domain -->|Manages| Parking_Table
+    WashOrders_Domain -->|Manages| WashOrders_Table
+    WashServices_Domain -->|Manages| WashServices_Table
+    
+    WashOrders_Table -->|References| VehicleTypes_Table
+    
+    style Frontend fill:#61dafb,stroke:#333,stroke-width:2px
+    style Backend fill:#68a063,stroke:#333,stroke-width:2px
+    style Database fill:#336791,stroke:#333,stroke-width:2px
+    style Domains fill:#f7df1e,stroke:#333,stroke-width:2px
+```
+
+### Fluxo de Dados - Check-in e Checkout
+
+```mermaid
+sequenceDiagram
+    participant User as 👤 Usuário
+    participant Frontend as 🎨 Frontend
+    participant Backend as 🔧 Backend
+    participant DB as 💾 Supabase
+
+    User->>Frontend: Clica "Check-in"
+    Frontend->>Backend: POST /api/parking/checkin
+    Backend->>DB: INSERT INTO parking
+    DB-->>Backend: ID do registro
+    Backend-->>Frontend: HTTP 201 + ID
+    Frontend-->>User: Exibe "Veículo estacionado"
+
+    Note over User,DB: ... tempo passa ...
+
+    User->>Frontend: Clica "Checkout"
+    Frontend->>Backend: POST /api/parking/:id/checkout
+    Backend->>DB: SELECT * FROM parking WHERE id
+    DB-->>Backend: Dados do veículo
+    Backend->>Backend: Calcula tarifa
+    Backend->>DB: UPDATE parking SET exitTime, status
+    DB-->>Backend: Confirmação
+    Backend-->>Frontend: HTTP 200 + Tarifa
+    Frontend-->>User: Exibe recibo
+```
+
+---
+
+## 13. Contribuindo
 
 Este é um projeto acadêmico focado em demonstrar o processo de desenvolvimento com IA. Contribuições são bem-vindas!
 
-## 10. Licença
+### Como Contribuir
 
-MIT
+1. Fork o repositório
+2. Crie uma branch para sua feature (`git checkout -b feature/minha-feature`)
+3. Commit suas mudanças (`git commit -m 'feat: adiciona minha feature'`)
+4. Push para a branch (`git push origin feature/minha-feature`)
+5. Abra um Pull Request
+
+### Diretrizes
+
+- Mantenha o código TypeScript tipado
+- Adicione testes para novas funcionalidades
+- Atualize a documentação em `docs/prompts/` com ciclos de refinamento
+- Siga o padrão de commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
+
+---
+
+## 14. Licença
+
+MIT - Veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+---
+
+## 15. Contato e Suporte
+
+- 📧 **Email:** [seu-email@example.com]
+- 🐙 **GitHub:** [seu-github-profile]
+- 💼 **LinkedIn:** [seu-linkedin-profile]
+
+---
+
+**Desenvolvido com ❤️ e IA** | ParkingWash © 2024

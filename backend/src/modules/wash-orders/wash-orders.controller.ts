@@ -20,8 +20,8 @@ export class WashOrdersController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { licensePlate, washServiceId } = req.body;
-      const order = await this.service.createOrder(licensePlate, washServiceId);
+      const { licensePlate, washServiceId, vehicleTypeId } = req.body;
+      const order = await this.service.createOrder(licensePlate, washServiceId, vehicleTypeId);
       res.status(201).json(order);
     } catch (error) {
       next(error);

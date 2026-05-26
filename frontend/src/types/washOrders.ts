@@ -30,6 +30,7 @@ export interface WashOrder {
 export interface CreateWashOrderRequest {
   licensePlate: string;
   washServiceId: string;
+  vehicleTypeId?: string;
 }
 
 export interface UpdateWashOrderStatusRequest {

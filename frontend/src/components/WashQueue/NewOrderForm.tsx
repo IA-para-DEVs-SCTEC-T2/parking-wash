@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { WashService, VehicleType } from '../../types/washOrders'
 import { listWashServices } from '../../api/washServices'
+import { listVehicleTypes } from '../../api/vehicleTypes'
 import { createWashOrder } from '../../api/washOrders'
 import './NewOrderForm.css'
 
@@ -12,34 +13,39 @@ interface NewOrderFormProps {
 const LEGACY_PLATE_REGEX = /^[A-Z]{3}-\d{4}$/
 const MERCOSUL_PLATE_REGEX = /^[A-Z]{3}\d[A-Z]\d{2}$/
 
-const VEHICLE_TYPES: VehicleType[] = [
-  { id: '1', name: 'Motocicleta', code: 'MOTORCYCLE' },
-  { id: '2', name: 'Carro', code: 'CAR' },
-  { id: '3', name: 'Motorhome', code: 'MOTORHOME' },
-]
-
 function isValidLicensePlate(plate: string): boolean {
   return LEGACY_PLATE_REGEX.test(plate) || MERCOSUL_PLATE_REGEX.test(plate)
 }
 
 export function NewOrderForm({ onSuccess, onOrderCreated }: NewOrderFormProps): JSX.Element {
   const [licensePlate, setLicensePlate] = useState('')
-  const [vehicleTypeId, setVehicleTypeId] = useState('2') // Default: Carro
+  const [vehicleTypeId, setVehicleTypeId] = useState('')
   const [washServiceId, setWashServiceId] = useState('')
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([])
   const [services, setServices] = useState<WashService[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
       try {
-        const data = await listWashServices()
-        setServices(data)
-        if (data.length > 0) {
-          setWashServiceId(data[0].id)
+        const [typesData, servicesData] = await Promise.all([
+          listVehicleTypes(),
+          listWashServices(),
+        ])
+        
+        setVehicleTypes(typesData)
+        setServices(servicesData)
+        
+        // Set defaults
+        if (typesData.length > 0) {
+          setVehicleTypeId(typesData[0].id)
+        }
+        if (servicesData.length > 0) {
+          setWashServiceId(servicesData[0].id)
         }
       } catch (err: unknown) {
-        let errorMsg = 'Erro ao carregar serviços'
+        let errorMsg = 'Erro ao carregar dados'
         
         if (err instanceof Error) {
           errorMsg = err.message
@@ -51,7 +57,7 @@ export function NewOrderForm({ onSuccess, onOrderCreated }: NewOrderFormProps): 
       }
     }
 
-    fetchServices()
+    fetchData()
   }, [])
 
   const isFormValid = isValidLicensePlate(licensePlate) && washServiceId && vehicleTypeId
@@ -67,10 +73,10 @@ export function NewOrderForm({ onSuccess, onOrderCreated }: NewOrderFormProps): 
     setError(null)
 
     try {
-      await createWashOrder(licensePlate, washServiceId)
+      await createWashOrder(licensePlate, washServiceId, vehicleTypeId)
       setLicensePlate('')
-      setVehicleTypeId('2')
-      setWashServiceId(services[0]?.id || '')
+      setVehicleTypeId(vehicleTypes.length > 0 ? vehicleTypes[0].id : '')
+      setWashServiceId(services.length > 0 ? services[0].id : '')
       onSuccess?.()
       onOrderCreated?.()
     } catch (err: unknown) {
@@ -101,11 +107,15 @@ export function NewOrderForm({ onSuccess, onOrderCreated }: NewOrderFormProps): 
           value={vehicleTypeId}
           onChange={(e) => setVehicleTypeId(e.target.value)}
         >
-          {VEHICLE_TYPES.map((vt) => (
-            <option key={vt.id} value={vt.id}>
-              {vt.name}
-            </option>
-          ))}
+          {vehicleTypes.length === 0 ? (
+            <option value="">Carregando tipos de veículo...</option>
+          ) : (
+            vehicleTypes.map((vt) => (
+              <option key={vt.id} value={vt.id}>
+                {vt.name}
+              </option>
+            ))
+          )}
         </select>
       </div>
 

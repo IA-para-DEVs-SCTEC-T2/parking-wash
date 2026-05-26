@@ -8,11 +8,13 @@ import {
 
 export async function createWashOrder(
   licensePlate: string,
-  washServiceId: string
+  washServiceId: string,
+  vehicleTypeId?: string
 ): Promise<WashOrder> {
   const body: CreateWashOrderRequest = {
     licensePlate,
     washServiceId,
+    vehicleTypeId,
   }
   return apiPost<WashOrder>('/api/wash-orders', body)
 }

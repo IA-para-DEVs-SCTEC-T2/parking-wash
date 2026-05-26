@@ -11,13 +11,15 @@ export class WashOrderService {
    * Creates a new wash order for a vehicle
    * @param licensePlate - Vehicle license plate (validated format)
    * @param washServiceId - UUID of the wash service
+   * @param vehicleTypeId - Optional UUID of the vehicle type (if not provided, will try to get from parking record)
    * @returns Promise<WashOrderResponse> - Created order with service details
    * @throws ValidationError if service not found or inactive
    * @throws ServiceUnavailableError if database error occurs
    */
   async createOrder(
     licensePlate: string,
-    washServiceId: string
+    washServiceId: string,
+    vehicleTypeId?: string
   ): Promise<WashOrderResponse> {
     // Query wash_services table for the service
     const { data: service, error: serviceError } = await supabase
@@ -35,17 +37,20 @@ export class WashOrderService {
     }
 
     try {
-      // Get vehicle type from parking_records
-      let vehicleTypeId: string | null = null;
-      const { data: parkingRecord } = await supabase
-        .from('parking_records')
-        .select('vehicle_type_id')
-        .eq('license_plate', licensePlate)
-        .eq('status', 'Parked')
-        .single();
+      // Use provided vehicleTypeId or try to get from parking record
+      let finalVehicleTypeId: string | null = vehicleTypeId || null;
+      
+      if (!finalVehicleTypeId) {
+        const { data: parkingRecord } = await supabase
+          .from('parking_records')
+          .select('vehicle_type_id')
+          .eq('license_plate', licensePlate)
+          .eq('status', 'Parked')
+          .single();
 
-      if (parkingRecord?.vehicle_type_id) {
-        vehicleTypeId = parkingRecord.vehicle_type_id;
+        if (parkingRecord?.vehicle_type_id) {
+          finalVehicleTypeId = parkingRecord.vehicle_type_id;
+        }
       }
 
       // Insert new WashOrder
@@ -54,7 +59,7 @@ export class WashOrderService {
         .insert({
           license_plate: licensePlate,
           wash_service_id: washServiceId,
-          vehicle_type_id: vehicleTypeId,
+          vehicle_type_id: finalVehicleTypeId,
           status: 'Waiting',
           created_at: new Date().toISOString(),
         })
