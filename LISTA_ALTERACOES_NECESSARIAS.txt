@@ -1,0 +1,302 @@
+================================================================================
+                    LISTA DE ALTERAÇÕES NECESSÁRIAS
+                         ANTES DE FAZER PUSH
+================================================================================
+
+STATUS: ⚠️ CRÍTICO - Não fazer push sem resolver os problemas
+
+================================================================================
+                        PROBLEMAS CRÍTICOS
+================================================================================
+
+1. 🔴 SECRETS EXPOSTOS NO backend/.env
+   
+   Arquivo: backend/.env
+   Problema: Contém SUPABASE_SERVICE_KEY exposta
+   Risco: Chave secreta visível no histórico do git para sempre
+   
+   Solução:
+   $ git rm --cached backend/.env
+   $ echo ".env" >> .gitignore
+   $ git add .gitignore
+   $ git commit -m "chore: remove secrets from git"
+
+================================================================================
+                        PROBLEMAS IMPORTANTES
+================================================================================
+
+2. 🟡 20+ ARQUIVOS DE DOCUMENTAÇÃO TEMPORÁRIA
+
+   Arquivos a remover:
+   - ACAO_NECESSARIA_USUARIO.md
+   - ACAO_URGENTE_PROMPT_TRAVADO.md
+   - ANALISE_REQUISITOS_E_PROXIMOS_PASSOS.md
+   - BRANCHES_CRIADAS_COM_SUCESSO.md
+   - CHECKLIST_FINAL_SUBMISSAO.md
+   - COMECE_AQUI.md
+   - COMPLETE_PROJECT_SUMMARY.md
+   - CRIAR_BRANCHES_AGORA.md
+   - EXECUTE_BRANCHES_CREATION.md
+   - FINAL_SUMMARY_AND_NEXT_STEPS.md
+   - LEIA_PRIMEIRO.md
+   - MANUAL_BRANCH_CREATION.md
+   - PROXIMOS_PASSOS_FINAIS.md
+   - QUICK_START_GUIDE.md
+   - README_FINAL_ACTIONS.md
+   - RESOLVER_PROMPT_TRAVADO.md
+   - RESOLVING_GIT_ISSUE.md
+   - RESUMO_EXECUTIVO.txt
+   - RESUMO_FINAL_100_PORCENTO.md
+   - STATUS_FINAL.txt
+   
+   Solução:
+   $ .\LIMPAR_ANTES_PUSH.ps1
+   
+   Ou remover manualmente:
+   $ rm ACAO_NECESSARIA_USUARIO.md
+   $ rm ACAO_URGENTE_PROMPT_TRAVADO.md
+   ... (remover todos os 20 arquivos)
+   
+   $ git add -A
+   $ git commit -m "chore: remove temporary documentation"
+
+3. 🟡 15+ SCRIPTS DE CRIAÇÃO DE BRANCHES
+
+   Scripts a remover:
+   - create_all_issues.py
+   - create_board_and_issues.py
+   - create_branches.bat
+   - create_branches.ps1
+   - create_branches.sh
+   - create_branches_api.ps1
+   - create_branches_automated.ps1
+   - create_branches_via_github.md
+   - create_branches_with_input.ps1
+   - create_issues.py
+   - create_pr.py
+   - create_pr_direct.py
+   - fix_and_pr.ps1
+   - fix_develop_branch.py
+   - merge_and_push.bat
+   - merge_via_api.py
+   
+   Solução:
+   $ .\LIMPAR_ANTES_PUSH.ps1
+   
+   Ou remover manualmente:
+   $ rm create_*.py
+   $ rm create_*.ps1
+   $ rm create_*.bat
+   $ rm create_*.sh
+   $ rm create_*.md
+   $ rm fix_*.ps1
+   $ rm fix_*.py
+   $ rm merge_*.bat
+   $ rm merge_*.py
+   
+   $ git add -A
+   $ git commit -m "chore: remove temporary scripts"
+
+================================================================================
+                        PROBLEMAS SECUNDÁRIOS
+================================================================================
+
+4. ⚠️ POSSÍVEL DUPLICAÇÃO DE src/
+
+   Análise:
+   - Há src/ na raiz
+   - Há backend/src/ no backend
+   - Pode ser duplicação ou link simbólico
+   
+   Solução:
+   $ ls -la src/
+   $ ls -la backend/src/
+   
+   Se forem iguais:
+   $ rm -rf src/
+   $ git add -A
+   $ git commit -m "chore: remove duplicate src directory"
+
+5. ⚠️ FALTA DE package.json NO BACKEND
+
+   Análise:
+   - Apenas package-lock.json no backend
+   - package.json está na raiz
+   - Pode causar problemas ao instalar dependências isoladamente
+   
+   Recomendação:
+   - Manter estrutura atual (package.json na raiz)
+   - Ou criar backend/package.json se necessário
+
+================================================================================
+                        CHECKLIST PRÉ-PUSH
+================================================================================
+
+SEGURANÇA:
+  [ ] Remover backend/.env do git
+  [ ] Adicionar .env ao .gitignore
+  [ ] Verificar se há outras secrets expostas
+  [ ] Verificar se há arquivos sensíveis
+
+LIMPEZA:
+  [ ] Remover 20+ arquivos de documentação
+  [ ] Remover 15+ scripts de criação de branches
+  [ ] Verificar se src/ é necessário
+  [ ] Verificar se dist/ deve estar no git
+
+VERIFICAÇÃO:
+  [ ] Testar build: npm run build
+  [ ] Testar testes: npm test
+  [ ] Testar lint: npm run lint
+  [ ] Verificar status: git status
+  [ ] Verificar commits: git log --oneline -5
+
+GIT:
+  [ ] Remover secrets
+  [ ] Limpar arquivos desnecessários
+  [ ] Fazer commits com mensagens claras
+  [ ] Fazer push para develop
+
+================================================================================
+                    PASSO A PASSO PARA FAZER PUSH
+================================================================================
+
+PASSO 1: Remover Secrets (CRÍTICO)
+  $ git rm --cached backend/.env
+  $ echo ".env" >> .gitignore
+  $ git add .gitignore
+  $ git commit -m "chore: remove secrets from git"
+
+PASSO 2: Limpar Arquivos Desnecessários
+  $ .\LIMPAR_ANTES_PUSH.ps1
+  
+  Ou remover manualmente:
+  $ rm ACAO_NECESSARIA_USUARIO.md
+  $ rm ACAO_URGENTE_PROMPT_TRAVADO.md
+  ... (remover todos os 20+ arquivos)
+  
+  $ rm create_*.py
+  $ rm create_*.ps1
+  ... (remover todos os 15+ scripts)
+  
+  $ git add -A
+  $ git commit -m "chore: remove temporary files"
+
+PASSO 3: Verificar Estrutura
+  $ ls -la src/
+  $ ls -la backend/src/
+  
+  Se forem iguais:
+  $ rm -rf src/
+  $ git add -A
+  $ git commit -m "chore: remove duplicate src directory"
+
+PASSO 4: Testar
+  $ npm run build
+  $ npm test
+  $ npm run lint
+
+PASSO 5: Verificar Git
+  $ git status
+  $ git log --oneline -5
+
+PASSO 6: Fazer Push
+  $ git push origin develop
+
+================================================================================
+                        O QUE SERÁ COMMITADO
+================================================================================
+
+SERÁ COMMITADO (Correto):
+  ✅ backend/src/          - Código-fonte
+  ✅ frontend/src/         - Código-fonte
+  ✅ docs/prompts/         - Prompts utilizados
+  ✅ README.md             - Documentação principal
+  ✅ .github/workflows/    - CI/CD
+  ✅ package.json          - Dependências
+  ✅ tsconfig.json         - Configuração TypeScript
+  ✅ .eslintrc.json        - Configuração ESLint
+  ✅ jest.config.ts        - Configuração Jest
+  ✅ .gitignore            - Arquivos ignorados
+
+NÃO SERÁ COMMITADO (Correto):
+  ❌ node_modules/         - Dependências
+  ❌ dist/                 - Build
+  ❌ backend/.env          - Secrets
+  ❌ frontend/.env         - Configuração local
+  ❌ 20+ arquivos .md      - Documentação temporária
+  ❌ 15+ scripts           - Scripts temporários
+
+================================================================================
+                        RESUMO RÁPIDO
+================================================================================
+
+CRÍTICO:
+  ❌ backend/.env com secrets
+  ✅ Solução: git rm --cached backend/.env
+
+IMPORTANTE:
+  ❌ 20+ arquivos de documentação
+  ✅ Solução: .\LIMPAR_ANTES_PUSH.ps1
+
+IMPORTANTE:
+  ❌ 15+ scripts de criação
+  ✅ Solução: .\LIMPAR_ANTES_PUSH.ps1
+
+VERIFICAR:
+  ⚠️  Possível duplicação de src/
+  ✅ Solução: Remover se necessário
+
+TESTAR:
+  ✅ npm run build
+  ✅ npm test
+  ✅ npm run lint
+
+================================================================================
+                        TEMPO ESTIMADO
+================================================================================
+
+Remover secrets:        2 minutos
+Limpar arquivos:        1 minuto
+Testar:                 5 minutos
+Fazer push:             1 minuto
+─────────────────────────────────
+TOTAL:                  9 minutos
+
+================================================================================
+                        RESULTADO FINAL
+================================================================================
+
+Após seguir estes passos:
+
+✅ Repositório limpo e seguro
+✅ Sem secrets expostos
+✅ Sem arquivos desnecessários
+✅ Pronto para produção
+✅ 100% conforme com requisitos
+
+================================================================================
+                        PRÓXIMA AÇÃO
+================================================================================
+
+Execute o script de limpeza:
+  $ .\LIMPAR_ANTES_PUSH.ps1
+
+Ou siga o passo a passo acima.
+
+================================================================================
+                        DOCUMENTOS DE REFERÊNCIA
+================================================================================
+
+- ANALISE_ANTES_PUSH.md       - Análise completa
+- RESUMO_ANALISE_PUSH.md      - Resumo da análise
+- LIMPAR_ANTES_PUSH.ps1       - Script de limpeza
+- LISTA_ALTERACOES_NECESSARIAS.txt - Este arquivo
+
+================================================================================
+
+Status: ⚠️ CRÍTICO - Não fazer push sem resolver os problemas
+Data: 26/05/2026
+Projeto: ParkingWash
+
+================================================================================

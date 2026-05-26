@@ -1,0 +1,152 @@
+.receipt-modal {
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.receipt-header {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  padding: 24px;
+  border-radius: 8px 8px 0 0;
+  text-align: center;
+  margin: -16px -16px 24px -16px;
+}
+
+.receipt-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.receipt-subtitle {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.receipt-body {
+  padding: 0;
+}
+
+.receipt-section {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.receipt-section:last-of-type {
+  border-bottom: none;
+}
+
+.receipt-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.receipt-row .label {
+  color: #666;
+  font-weight: 500;
+}
+
+.receipt-row .value {
+  color: #333;
+  font-weight: 500;
+  text-align: right;
+}
+
+.receipt-row.total {
+  padding: 12px 0;
+  margin-top: 8px;
+  border-top: 2px solid #e0e0e0;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.receipt-row.total .label {
+  font-weight: 600;
+  color: #333;
+}
+
+.receipt-row.total .amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4CAF50;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.receipt-footer {
+  text-align: center;
+  padding: 16px 0;
+  margin-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.receipt-note {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+}
+
+.receipt-modal .modal-actions {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.receipt-modal .modal-actions .confirm-button {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.receipt-modal .modal-actions .confirm-button:hover {
+  background-color: #45a049;
+}
+
+.receipt-modal .modal-actions .confirm-button:active {
+  background-color: #3d8b40;
+}
+
+/* Print styles */
+@media print {
+  .receipt-modal {
+    max-width: 100%;
+    box-shadow: none;
+  }
+
+  .receipt-header {
+    margin: 0;
+  }
+
+  .modal-actions {
+    display: none;
+  }
+}
