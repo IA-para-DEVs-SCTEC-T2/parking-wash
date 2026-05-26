@@ -12,6 +12,7 @@
 .vehicles-section h2 {
   margin-bottom: 1.5rem;
   color: #333;
+  font-size: 1.3rem;
 }
 
 .loading {
@@ -32,9 +33,10 @@
 }
 
 .vehicles-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  width: 100%;
 }
 
 .error-message {
@@ -46,12 +48,65 @@
   border-left: 4px solid #c33;
 }
 
-@media (max-width: 768px) {
+/* Tablet - 2 colunas */
+@media (min-width: 640px) {
+  .vehicles-section {
+    padding: 1.25rem;
+  }
+
+  .vehicles-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .vehicles-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+/* Desktop - 3 colunas */
+@media (min-width: 1024px) {
+  .vehicles-section {
+    padding: 1.5rem;
+  }
+
+  .vehicles-section h2 {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .vehicles-list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Large Desktop - 4 colunas */
+@media (min-width: 1440px) {
+  .vehicles-list {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Mobile - Otimizado */
+@media (max-width: 640px) {
   .parking-panel {
     padding: 0;
   }
 
   .vehicles-section {
     border-radius: 0;
+    padding: 1rem;
+  }
+
+  .vehicles-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .vehicles-list {
+    gap: 0.5rem;
   }
 }

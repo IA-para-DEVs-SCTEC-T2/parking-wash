@@ -1,5 +1,5 @@
 import { WashOrder, WashOrderStatus } from '../../types/washOrders'
-import WashOrderCard from './WashOrderCard'
+import { WashOrderCard } from './WashOrderCard'
 import './StatusColumn.css'
 
 interface StatusColumnProps {
@@ -20,7 +20,7 @@ const STATUS_COLORS: Record<WashOrderStatus, string> = {
   Completed: '#28a745',
 }
 
-export default function StatusColumn({ status, orders, onOrderUpdated }: StatusColumnProps): JSX.Element {
+export function StatusColumn({ status, orders, onOrderUpdated }: StatusColumnProps): JSX.Element {
   return (
     <div className="status-column">
       <h3 className="status-header" style={{ backgroundColor: STATUS_COLORS[status] }}>

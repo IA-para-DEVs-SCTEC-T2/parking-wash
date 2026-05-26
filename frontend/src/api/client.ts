@@ -44,3 +44,10 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   })
   return handleResponse<T>(response)
 }
+
+// Backward compatibility
+export const apiClient = {
+  get: apiGet,
+  post: apiPost,
+  patch: apiPatch,
+}

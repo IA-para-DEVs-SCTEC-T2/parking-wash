@@ -8,7 +8,7 @@ interface WashOrderCardProps {
   onStatusUpdated: () => void
 }
 
-export default function WashOrderCard({ order, onStatusUpdated }: WashOrderCardProps): JSX.Element {
+export function WashOrderCard({ order, onStatusUpdated }: WashOrderCardProps): JSX.Element {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,6 +57,11 @@ export default function WashOrderCard({ order, onStatusUpdated }: WashOrderCardP
         <div className="info-row">
           <strong>Placa:</strong> <span className="plate">{order.licensePlate}</span>
         </div>
+        {order.vehicleType && (
+          <div className="info-row">
+            <strong>Tipo:</strong> <span className="vehicle-type">{order.vehicleType.name}</span>
+          </div>
+        )}
         <div className="info-row">
           <strong>Serviço:</strong> {order.washService.name} - R$ {order.washService.price.toFixed(2)}
         </div>

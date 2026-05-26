@@ -40,6 +40,8 @@ export interface WashOrder {
   license_plate: string;
   /** Reference to the WashService (UUID) */
   wash_service_id: string;
+  /** Reference to the VehicleType (UUID), optional */
+  vehicle_type_id?: string | null;
   /** Current status in the workflow */
   status: WashOrderStatus;
   /** Timestamp when the order was created (ISO 8601 UTC) */
@@ -64,6 +66,12 @@ export interface WashOrderResponse {
     id: string;
     name: string;
     price: number;
+  };
+  /** Vehicle type information, optional */
+  vehicleType?: {
+    id: string;
+    name: string;
+    code: string;
   };
   /** Current status in the workflow */
   status: WashOrderStatus;

@@ -1,22 +1,30 @@
 import { useState, useEffect } from 'react'
-import { WashService } from '../../types/washOrders'
+import { WashService, VehicleType } from '../../types/washOrders'
 import { listWashServices } from '../../api/washServices'
 import { createWashOrder } from '../../api/washOrders'
 import './NewOrderForm.css'
 
 interface NewOrderFormProps {
-  onOrderCreated: () => void
+  onSuccess?: () => void
+  onOrderCreated?: () => void
 }
 
 const LEGACY_PLATE_REGEX = /^[A-Z]{3}-\d{4}$/
 const MERCOSUL_PLATE_REGEX = /^[A-Z]{3}\d[A-Z]\d{2}$/
 
+const VEHICLE_TYPES: VehicleType[] = [
+  { id: '1', name: 'Motocicleta', code: 'MOTORCYCLE' },
+  { id: '2', name: 'Carro', code: 'CAR' },
+  { id: '3', name: 'Motorhome', code: 'MOTORHOME' },
+]
+
 function isValidLicensePlate(plate: string): boolean {
   return LEGACY_PLATE_REGEX.test(plate) || MERCOSUL_PLATE_REGEX.test(plate)
 }
 
-export default function NewOrderForm({ onOrderCreated }: NewOrderFormProps): JSX.Element {
+export function NewOrderForm({ onSuccess, onOrderCreated }: NewOrderFormProps): JSX.Element {
   const [licensePlate, setLicensePlate] = useState('')
+  const [vehicleTypeId, setVehicleTypeId] = useState('2') // Default: Carro
   const [washServiceId, setWashServiceId] = useState('')
   const [services, setServices] = useState<WashService[]>([])
   const [loading, setLoading] = useState(false)
@@ -46,7 +54,7 @@ export default function NewOrderForm({ onOrderCreated }: NewOrderFormProps): JSX
     fetchServices()
   }, [])
 
-  const isFormValid = isValidLicensePlate(licensePlate) && washServiceId
+  const isFormValid = isValidLicensePlate(licensePlate) && washServiceId && vehicleTypeId
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -61,8 +69,10 @@ export default function NewOrderForm({ onOrderCreated }: NewOrderFormProps): JSX
     try {
       await createWashOrder(licensePlate, washServiceId)
       setLicensePlate('')
+      setVehicleTypeId('2')
       setWashServiceId(services[0]?.id || '')
-      onOrderCreated()
+      onSuccess?.()
+      onOrderCreated?.()
     } catch (err: unknown) {
       let errorMsg = 'Erro inesperado. Tente novamente.'
       
@@ -83,6 +93,21 @@ export default function NewOrderForm({ onOrderCreated }: NewOrderFormProps): JSX
       <h2>Nova Ordem de Lavagem</h2>
 
       {error && <div className="error-message">{error}</div>}
+
+      <div className="form-group">
+        <label htmlFor="vehicleType">Tipo de Veículo</label>
+        <select
+          id="vehicleType"
+          value={vehicleTypeId}
+          onChange={(e) => setVehicleTypeId(e.target.value)}
+        >
+          {VEHICLE_TYPES.map((vt) => (
+            <option key={vt.id} value={vt.id}>
+              {vt.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="form-group">
         <label htmlFor="licensePlate">Placa do Veículo</label>

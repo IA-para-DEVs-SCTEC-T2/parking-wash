@@ -4,6 +4,7 @@ import { ParkingRecord } from '../../types/parking'
 import CheckInForm from './CheckInForm'
 import VehicleCard from './VehicleCard'
 import CheckoutModal from './CheckoutModal'
+import CurrentVehiclesPanel from './CurrentVehiclesPanel'
 import './ParkingPanel.css'
 
 export default function ParkingPanel() {
@@ -43,6 +44,8 @@ export default function ParkingPanel() {
   return (
     <div className="parking-panel">
       <CheckInForm onSuccess={fetchVehicles} />
+
+      <CurrentVehiclesPanel />
 
       {error && <div className="error-message">{error}</div>}
 

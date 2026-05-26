@@ -35,6 +35,48 @@ export interface ParkingRecord {
 
   /** Current status of the parking record */
   status: ParkingStatus;
+
+  /** Vehicle type UUID (optional for backward compatibility) */
+  vehicleTypeId?: string | null;
+
+  /** Whether daily rate was applied */
+  appliedDailyRate?: boolean;
+
+  /** Payment status */
+  paymentStatus?: string;
+
+  /** Payment method ID */
+  paymentMethodId?: string | null;
+
+  /** Payment transaction ID */
+  paymentTransactionId?: string | null;
+}
+
+/**
+ * Vehicle information from FIPE API
+ * Contains brand, model, year, fuel type, and estimated value
+ */
+export interface VehicleInfo {
+  /** Vehicle brand/manufacturer */
+  brand: string;
+
+  /** Vehicle model */
+  model: string;
+
+  /** Vehicle year of manufacture */
+  year: number;
+
+  /** Fuel type (Gasolina, Diesel, Álcool, Híbrido, Elétrico) */
+  fuel: string;
+
+  /** FIPE reference value in Brazilian Real */
+  fipeValue: number;
+
+  /** Vehicle type (Carro, Moto, Caminhão) */
+  vehicleType: 'Carro' | 'Moto' | 'Caminhão';
+
+  /** Timestamp when data was retrieved */
+  retrievedAt: string;
 }
 
 /**
@@ -44,6 +86,9 @@ export interface ParkingRecord {
 export interface CheckInRequest {
   /** Vehicle license plate in Brazilian format */
   licensePlate: string;
+
+  /** Vehicle type UUID (optional for backward compatibility) */
+  vehicleTypeId?: string;
 }
 
 /**
@@ -62,6 +107,21 @@ export interface CheckInResponse {
 
   /** Current status (always 'Parked' for check-in response) */
   status: ParkingStatus;
+
+  /** Vehicle information from FIPE (optional) */
+  vehicleInfo?: VehicleInfo;
+}
+
+/**
+ * Request payload for check-out operation
+ * Sent by the client to register a vehicle exit with tariff options
+ */
+export interface CheckOutRequest {
+  /** Whether to apply daily rate instead of hourly */
+  applyDailyRate?: boolean;
+
+  /** Payment method ID (e.g., "credit_card", "cash", "pix") */
+  paymentMethodId?: string;
 }
 
 /**
@@ -89,4 +149,13 @@ export interface CheckOutResponse {
 
   /** Current status (always 'Exited' for check-out response) */
   status: ParkingStatus;
+
+  /** Whether daily rate was applied */
+  appliedDailyRate?: boolean;
+
+  /** Payment status */
+  paymentStatus?: string;
+
+  /** Vehicle information from FIPE (optional) */
+  vehicleInfo?: VehicleInfo;
 }

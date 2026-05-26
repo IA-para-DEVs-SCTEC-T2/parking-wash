@@ -7,10 +7,20 @@ export interface WashService {
   duration_estimate: number;
 }
 
+export interface VehicleType {
+  id: string;
+  name: string;
+  code: string;
+  hourlyRate?: number;
+  dailyRate?: number;
+  isActive?: boolean;
+}
+
 export interface WashOrder {
   id: string;
   licensePlate: string;
   washService: Pick<WashService, 'id' | 'name' | 'price'>;
+  vehicleType?: VehicleType;
   status: WashOrderStatus;
   createdAt: string;
   startedAt: string | null;

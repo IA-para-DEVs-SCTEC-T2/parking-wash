@@ -35,12 +35,26 @@ export class WashOrderService {
     }
 
     try {
+      // Get vehicle type from parking_records
+      let vehicleTypeId: string | null = null;
+      const { data: parkingRecord } = await supabase
+        .from('parking_records')
+        .select('vehicle_type_id')
+        .eq('license_plate', licensePlate)
+        .eq('status', 'Parked')
+        .single();
+
+      if (parkingRecord?.vehicle_type_id) {
+        vehicleTypeId = parkingRecord.vehicle_type_id;
+      }
+
       // Insert new WashOrder
       const { data: order, error: insertError } = await supabase
         .from('wash_orders')
         .insert({
           license_plate: licensePlate,
           wash_service_id: washServiceId,
+          vehicle_type_id: vehicleTypeId,
           status: 'Waiting',
           created_at: new Date().toISOString(),
         })
@@ -54,7 +68,7 @@ export class WashOrderService {
       }
 
       // Return formatted response
-      return this.formatWashOrderResponse(order, service);
+      return this.formatWashOrderResponse(order, service, null);
     } catch (error) {
       if (error instanceof ValidationError || error instanceof ServiceUnavailableError) {
         throw error;
@@ -140,7 +154,18 @@ export class WashOrderService {
         );
       }
 
-      return this.formatWashOrderResponse(updatedOrder, service);
+      // Fetch vehicle type if available
+      let vehicleType = null;
+      if (updatedOrder.vehicle_type_id) {
+        const { data: vt } = await supabase
+          .from('vehicle_types')
+          .select('id, name, code')
+          .eq('id', updatedOrder.vehicle_type_id)
+          .single();
+        vehicleType = vt;
+      }
+
+      return this.formatWashOrderResponse(updatedOrder, service, vehicleType);
     } catch (error) {
       if (
         error instanceof ValidationError ||
@@ -180,7 +205,8 @@ export class WashOrderService {
         .select(
           `
           *,
-          wash_services:wash_service_id (id, name, price)
+          wash_services:wash_service_id (id, name, price),
+          vehicle_types:vehicle_type_id (id, name, code)
         `
         );
 
@@ -220,9 +246,10 @@ export class WashOrderService {
    */
   private formatWashOrderResponse(
     order: WashOrder,
-    service: any
+    service: any,
+    vehicleType?: any
   ): WashOrderResponse {
-    return {
+    const response: WashOrderResponse = {
       id: order.id,
       licensePlate: order.license_plate,
       washService: {
@@ -235,6 +262,16 @@ export class WashOrderService {
       startedAt: order.started_at,
       completedAt: order.completed_at,
     };
+
+    if (vehicleType) {
+      response.vehicleType = {
+        id: vehicleType.id,
+        name: vehicleType.name,
+        code: vehicleType.code,
+      };
+    }
+
+    return response;
   }
 
   /**
@@ -246,7 +283,7 @@ export class WashOrderService {
       ? order.wash_services[0]
       : order.wash_services;
 
-    return {
+    const response: WashOrderResponse = {
       id: order.id,
       licensePlate: order.license_plate,
       washService: {
@@ -259,5 +296,19 @@ export class WashOrderService {
       startedAt: order.started_at,
       completedAt: order.completed_at,
     };
+
+    // Add vehicle type if available
+    if (order.vehicle_types) {
+      const vehicleType = Array.isArray(order.vehicle_types)
+        ? order.vehicle_types[0]
+        : order.vehicle_types;
+      response.vehicleType = {
+        id: vehicleType.id,
+        name: vehicleType.name,
+        code: vehicleType.code,
+      };
+    }
+
+    return response;
   }
 }

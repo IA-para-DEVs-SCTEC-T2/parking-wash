@@ -32,6 +32,26 @@ router.post(
 );
 
 /**
+ * GET /api/parking/history
+ * List last 10 exited parking records
+ * MUST come before /:id routes to avoid being captured by dynamic parameter
+ */
+router.get(
+  '/history',
+  (req, res, next) => controller.getHistory(req, res, next)
+);
+
+/**
+ * GET /api/parking/fipe/:licensePlate
+ * Retrieve vehicle information from FIPE API by license plate
+ * MUST come before /:id routes to avoid being captured by dynamic parameter
+ */
+router.get(
+  '/fipe/:licensePlate',
+  (req, res, next) => controller.getFipeData(req, res, next)
+);
+
+/**
  * GET /api/parking
  * List parking records with optional status filter
  */

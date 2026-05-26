@@ -2,11 +2,11 @@ import { useState, useCallback } from 'react'
 import { WashOrder } from '../../types/washOrders'
 import { listWashOrders } from '../../api/washOrders'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
-import NewOrderForm from './NewOrderForm'
-import StatusColumn from './StatusColumn'
+import { NewOrderForm } from './NewOrderForm'
+import { StatusColumn } from './StatusColumn'
 import './WashQueue.css'
 
-export default function WashQueue(): JSX.Element {
+export function WashQueue(): JSX.Element {
   const [orders, setOrders] = useState<WashOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
