@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import ParkingPanel from './components/ParkingPanel/ParkingPanel'
 import { WashQueue } from './components/WashQueue/WashQueue'
+import Dashboard from './components/Dashboard/Dashboard'
 import { ToastContainer } from './components/Toast/Toast'
 import { useToast } from './hooks/useToast'
 import './App.css'
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'parking' | 'wash'>('parking')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'parking' | 'wash'>('dashboard')
   const { toasts, removeToast, success, error, info } = useToast()
 
   const handleToast = (message: string, type: 'success' | 'error' | 'info') => {
@@ -26,6 +27,12 @@ export default function App() {
 
         <nav className="app-nav">
           <button
+            className={`nav-button ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            Dashboard
+          </button>
+          <button
             className={`nav-button ${activeTab === 'parking' ? 'active' : ''}`}
             onClick={() => setActiveTab('parking')}
           >
@@ -40,6 +47,7 @@ export default function App() {
         </nav>
 
         <main className="app-content">
+          {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'parking' && <ParkingPanel onToast={handleToast} />}
           {activeTab === 'wash' && <WashQueue />}
         </main>

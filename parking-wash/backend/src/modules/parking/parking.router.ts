@@ -32,6 +32,16 @@ router.post(
 );
 
 /**
+ * GET /api/parking/dashboard
+ * Get dashboard metrics (today's stats)
+ * MUST come before /:id routes to avoid being captured by dynamic parameter
+ */
+router.get(
+  '/dashboard',
+  (req, res, next) => controller.getDashboard(req, res, next)
+);
+
+/**
  * GET /api/parking/history
  * List last 10 exited parking records
  * MUST come before /:id routes to avoid being captured by dynamic parameter

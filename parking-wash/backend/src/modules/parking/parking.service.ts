@@ -238,6 +238,77 @@ export class ParkingService {
   }
 
   /**
+   * Get dashboard metrics for today
+   * @returns Revenue, vehicles count, avg duration, current occupancy
+   */
+  async getDashboardMetrics() {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+
+      // Get today's completed checkouts (revenue + count + avg duration)
+      const { data: todayExited, error: exitedError } = await supabase
+        .from('parking_records')
+        .select('total_amount, duration_minutes, exit_time')
+        .eq('status', 'Exited')
+        .gte('exit_time', todayISO);
+
+      if (exitedError) {
+        throw new ServiceUnavailableError(
+          'Serviço temporariamente indisponível. Tente novamente em instantes'
+        );
+      }
+
+      // Get currently parked vehicles
+      const { data: parked, error: parkedError } = await supabase
+        .from('parking_records')
+        .select('id')
+        .eq('status', 'Parked');
+
+      if (parkedError) {
+        throw new ServiceUnavailableError(
+          'Serviço temporariamente indisponível. Tente novamente em instantes'
+        );
+      }
+
+      // Get today's check-ins
+      const { data: todayEntries, error: entriesError } = await supabase
+        .from('parking_records')
+        .select('id')
+        .gte('entry_time', todayISO);
+
+      if (entriesError) {
+        throw new ServiceUnavailableError(
+          'Serviço temporariamente indisponível. Tente novamente em instantes'
+        );
+      }
+
+      const records = todayExited || [];
+      const revenueToday = records.reduce((sum: number, r: any) => sum + (r.total_amount || 0), 0);
+      const checkoutsToday = records.length;
+      const avgDuration = records.length > 0
+        ? Math.round(records.reduce((sum: number, r: any) => sum + (r.duration_minutes || 0), 0) / records.length)
+        : 0;
+
+      return {
+        revenueToday: Number(revenueToday.toFixed(2)),
+        checkoutsToday,
+        entriesTotal: (todayEntries || []).length,
+        currentOccupancy: (parked || []).length,
+        avgDurationMinutes: avgDuration,
+      };
+    } catch (error) {
+      if (error instanceof ServiceUnavailableError) {
+        throw error;
+      }
+      throw new ServiceUnavailableError(
+        'Serviço temporariamente indisponível. Tente novamente em instantes'
+      );
+    }
+  }
+
+  /**
    * Get parking history (last 10 exited records)
    * @returns Array of parking records with status = 'Exited', limited to 10
    * @throws ServiceUnavailableError if database operation fails

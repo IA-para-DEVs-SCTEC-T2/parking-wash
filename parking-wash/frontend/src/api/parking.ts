@@ -21,6 +21,18 @@ export async function getHistory(): Promise<ParkingRecord[]> {
   return apiGet<ParkingRecord[]>('/api/parking/history')
 }
 
+export interface DashboardMetrics {
+  revenueToday: number
+  checkoutsToday: number
+  entriesTotal: number
+  currentOccupancy: number
+  avgDurationMinutes: number
+}
+
+export async function getDashboard(): Promise<DashboardMetrics> {
+  return apiGet<DashboardMetrics>('/api/parking/dashboard')
+}
+
 export async function getFipeData(licensePlate: string): Promise<any> {
   return apiGet(`/api/parking/fipe/${licensePlate}`)
 }

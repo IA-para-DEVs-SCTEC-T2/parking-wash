@@ -76,6 +76,24 @@ export class ParkingController {
   }
 
   /**
+   * Handle GET /api/parking/dashboard
+   * Returns today's metrics: revenue, vehicles, avg duration, occupancy
+   * @returns HTTP 200 with DashboardMetrics
+   */
+  async getDashboard(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const metrics = await this.service.getDashboardMetrics();
+      res.status(200).json(metrics);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Handle GET /api/parking/history
    * Lists last 10 exited parking records
    * @returns HTTP 200 with array of ParkingRecords
