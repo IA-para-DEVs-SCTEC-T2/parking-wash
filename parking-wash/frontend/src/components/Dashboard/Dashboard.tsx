@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react'
 import { getDashboard, type DashboardMetrics } from '../../api/parking'
+import { getSettings, type ParkingSettings } from '../../api/settings'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
 import { formatBRL } from '../../utils/pricing'
+import SettingsModal from './SettingsModal'
 import './Dashboard.css'
 
 function formatDuration(minutes: number): string {
@@ -15,13 +17,19 @@ function formatDuration(minutes: number): string {
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
+  const [settings, setSettings] = useState<ParkingSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const data = await getDashboard()
+      const [data, settingsData] = await Promise.all([
+        getDashboard(),
+        getSettings(),
+      ])
       setMetrics(data)
+      setSettings(settingsData)
       setError('')
     } catch (err: unknown) {
       let errorMsg = 'Erro ao carregar métricas'
@@ -60,9 +68,13 @@ export default function Dashboard() {
     <div className="dashboard">
       <div className="dashboard-header">
         <h2>📊 Dashboard</h2>
-        <span className="dashboard-date">{todayLabel}</span>
+        <div className="dashboard-header-right">
+          <span className="dashboard-date">{todayLabel}</span>
+          <button className="settings-btn" onClick={() => setShowSettings(true)}>⚙️ Configurações</button>
+        </div>
       </div>
 
+      {/* Metrics grid */}
       <div className="metrics-grid">
         {/* Faturamento */}
         <div className="metric-card revenue">
@@ -109,6 +121,14 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modal de configurações */}
+      {showSettings && (
+        <SettingsModal
+          onClose={() => setShowSettings(false)}
+          onSaved={() => fetchMetrics()}
+        />
+      )}
     </div>
   )
 }

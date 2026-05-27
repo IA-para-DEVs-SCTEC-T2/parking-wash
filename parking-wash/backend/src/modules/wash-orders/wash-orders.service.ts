@@ -197,13 +197,16 @@ export class WashOrderService {
   }
 
   /**
-   * Lists wash orders, optionally filtered by status
+   * Lists wash orders, optionally filtered by status and/or date
    * @param status - Optional status filter (Waiting, InProgress, or Completed)
+   * @param date - Optional date filter in YYYY-MM-DD format (filters by created_at day)
+   *              Defaults to today for Completed orders if not specified
+   * @param showAll - If true, returns all records regardless of date (for history)
    * @returns Promise<WashOrderResponse[]> - Array of orders with service details
    * @throws ValidationError if status is invalid
    * @throws ServiceUnavailableError if database error occurs
    */
-  async listOrders(status?: string): Promise<WashOrderResponse[]> {
+  async listOrders(status?: string, date?: string, showAll?: boolean): Promise<WashOrderResponse[]> {
     // Validate status if provided
     if (status) {
       const validStatuses = ['Waiting', 'InProgress', 'Completed'];
@@ -231,6 +234,26 @@ export class WashOrderService {
         query = query.eq('status', status);
       }
 
+      // Apply date filter for active queue view (not history)
+      // For Waiting/InProgress: always show all (they're active)
+      // For Completed or no status filter: show only today unless showAll=true
+      if (!showAll && !date) {
+        // Default: filter completed orders to today only
+        if (status === 'Completed' || !status) {
+          const today = new Date().toISOString().split('T')[0];
+          const dayStart = `${today}T00:00:00.000Z`;
+          // For non-completed, show all; for completed, show today only
+          if (status === 'Completed') {
+            query = query.gte('completed_at', dayStart);
+          }
+        }
+      } else if (date) {
+        // Specific date filter
+        const dayStart = `${date}T00:00:00.000Z`;
+        const dayEnd = `${date}T23:59:59.999Z`;
+        query = query.gte('created_at', dayStart).lte('created_at', dayEnd);
+      }
+
       // Apply ordering
       query = query.order('created_at', { ascending: true });
 
@@ -248,6 +271,45 @@ export class WashOrderService {
       );
     } catch (error) {
       if (error instanceof ValidationError || error instanceof ServiceUnavailableError) {
+        throw error;
+      }
+      throw new ServiceUnavailableError(
+        'Serviço temporariamente indisponível. Tente novamente em instantes'
+      );
+    }
+  }
+
+  /**
+   * Lists completed wash orders history (all dates)
+   * Returns last 50 completed orders ordered by completed_at DESC
+   * Used for the history/audit view
+   */
+  async listHistory(limit: number = 50): Promise<WashOrderResponse[]> {
+    try {
+      const { data: orders, error } = await supabase
+        .from('wash_orders')
+        .select(
+          `
+          *,
+          wash_services:wash_service_id (id, name, price),
+          vehicle_types:vehicle_type_id (id, name, code)
+        `
+        )
+        .eq('status', 'Completed')
+        .order('completed_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        throw new ServiceUnavailableError(
+          'Serviço temporariamente indisponível. Tente novamente em instantes'
+        );
+      }
+
+      return (orders || []).map((order: any) =>
+        this.formatWashOrderResponseFromJoin(order)
+      );
+    } catch (error) {
+      if (error instanceof ServiceUnavailableError) {
         throw error;
       }
       throw new ServiceUnavailableError(

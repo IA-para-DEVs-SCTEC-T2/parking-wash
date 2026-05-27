@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react'
 import { WashOrder } from '../../types/washOrders'
 import { listWashOrders, listWashOrdersHistory } from '../../api/washOrders'
+import { getSettings } from '../../api/settings'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
 import { NewOrderForm } from './NewOrderForm'
 import { StatusColumn } from './StatusColumn'
+import OccupancyBar from '../Dashboard/OccupancyBar'
 import './WashQueue.css'
 
 export function WashQueue(): JSX.Element {
@@ -13,14 +15,19 @@ export function WashQueue(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [searchPlate, setSearchPlate] = useState('')
+  const [washSpots, setWashSpots] = useState(5)
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const data = await listWashOrders()
+      const [data, settings] = await Promise.all([
+        listWashOrders(),
+        getSettings(),
+      ])
       setOrders(data)
+      setWashSpots(settings.washSpots)
     } catch (err: unknown) {
       let errorMsg = 'Erro ao carregar ordens'
       
@@ -84,6 +91,13 @@ export function WashQueue(): JSX.Element {
         <div className="error-message">
           {error}
         </div>
+      )}
+
+      {!showHistory && (
+        <OccupancyBar
+          occupied={waitingOrders.length + inProgressOrders.length}
+          total={washSpots}
+        />
       )}
 
       {!showHistory ? (

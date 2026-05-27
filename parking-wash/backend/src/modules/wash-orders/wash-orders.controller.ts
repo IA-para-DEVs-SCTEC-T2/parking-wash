@@ -50,18 +50,42 @@ export class WashOrdersController {
 
   /**
    * GET /api/wash-orders
-   * Lists wash orders, optionally filtered by status
+   * Lists wash orders, optionally filtered by status and date
    * @query status - Optional filter (Waiting, InProgress, or Completed)
+   * @query date - Optional date filter (YYYY-MM-DD)
+   * @query all - If "true", returns all records regardless of date
    * @returns HTTP 200 with array of WashOrderResponse
    */
   async getWashOrders(
-    req: Request<{}, {}, {}, { status?: string }>,
+    req: Request<{}, {}, {}, { status?: string; date?: string; all?: string }>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const { status } = req.query;
-      const orders = await this.service.listOrders(status);
+      const { status, date, all } = req.query;
+      const showAll = all === 'true';
+      const orders = await this.service.listOrders(status, date, showAll);
+      res.status(200).json(orders);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/wash-orders/history
+   * Lists completed wash orders history (all dates, last 50)
+   * Used for audit/consultation of past services
+   * @query limit - Optional limit (default 50)
+   * @returns HTTP 200 with array of WashOrderResponse
+   */
+  async getWashOrdersHistory(
+    req: Request<{}, {}, {}, { limit?: string }>,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit, 10) : 50;
+      const orders = await this.service.listHistory(limit);
       res.status(200).json(orders);
     } catch (error) {
       next(error);

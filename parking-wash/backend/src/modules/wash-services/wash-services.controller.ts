@@ -20,4 +20,25 @@ export class WashServicesController {
       next(error);
     }
   }
+
+  async patchWashServicePrice(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { price } = req.body;
+
+      if (price === undefined || typeof price !== 'number') {
+        res.status(422).json({ error: 'price é obrigatório e deve ser um número' });
+        return;
+      }
+
+      const updated = await this.service.updatePrice(id, price);
+      res.status(200).json(updated);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

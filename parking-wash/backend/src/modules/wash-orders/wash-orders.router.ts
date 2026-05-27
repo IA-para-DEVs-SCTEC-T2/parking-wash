@@ -32,9 +32,20 @@ router.patch(
 );
 
 /**
+ * GET /api/wash-orders/history
+ * List completed wash orders history (all dates, for audit)
+ * Query: limit? (default 50)
+ * Response: HTTP 200 with array of WashOrderResponse (completed, ordered by date DESC)
+ */
+router.get(
+  '/history',
+  (req, res, next) => controller.getWashOrdersHistory(req, res, next)
+);
+
+/**
  * GET /api/wash-orders
- * List wash orders, optionally filtered by status
- * Query: status? (Waiting | InProgress | Completed)
+ * List wash orders, optionally filtered by status and date
+ * Query: status? (Waiting | InProgress | Completed), date? (YYYY-MM-DD), all? (true)
  * Response: HTTP 200 with array of WashOrderResponse
  */
 router.get(

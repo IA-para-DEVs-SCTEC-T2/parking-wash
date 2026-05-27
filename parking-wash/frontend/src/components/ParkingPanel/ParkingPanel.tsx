@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { listParking } from '../../api/parking'
+import { getSettings } from '../../api/settings'
 import { ParkingRecord } from '../../types/parking'
 import CheckInForm from './CheckInForm'
 import VehicleCard from './VehicleCard'
 import CheckoutModal from './CheckoutModal'
 import CurrentVehiclesPanel from './CurrentVehiclesPanel'
+import OccupancyBar from '../Dashboard/OccupancyBar'
 import './ParkingPanel.css'
 
 interface ParkingPanelProps {
@@ -16,14 +18,19 @@ export default function ParkingPanel({ onToast }: ParkingPanelProps) {
   const [selectedRecord, setSelectedRecord] = useState<ParkingRecord | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [totalSpots, setTotalSpots] = useState(30)
 
   const fetchVehicles = async () => {
     setLoading(true)
     setError('')
 
     try {
-      const data = await listParking('Parked')
+      const [data, settings] = await Promise.all([
+        listParking('Parked'),
+        getSettings(),
+      ])
       setVehicles(data)
+      setTotalSpots(settings.totalSpots)
     } catch (err: unknown) {
       let errorMsg = 'Erro ao carregar veículos'
 
@@ -52,6 +59,8 @@ export default function ParkingPanel({ onToast }: ParkingPanelProps) {
 
   return (
     <div className="parking-panel">
+      <OccupancyBar occupied={vehicles.length} total={totalSpots} />
+
       <CheckInForm onSuccess={handleCheckInSuccess} />
 
       <CurrentVehiclesPanel />

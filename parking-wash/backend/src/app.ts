@@ -7,6 +7,7 @@ import { washServicesRouter } from './modules/wash-services/wash-services.router
 import vehicleTypesRouter from './modules/vehicle-types/vehicle-type.router';
 import { notificationRouter } from './modules/notifications/notification.router';
 import { billingRouter } from './modules/billing/billing.router';
+import { settingsRouter } from './modules/settings/settings.router';
 
 const app = express();
 
@@ -31,6 +32,9 @@ app.use('/api/notifications', notificationRouter);
 
 // Billing routes
 app.use('/api/billing', billingRouter);
+
+// Settings routes
+app.use('/api/settings', settingsRouter);
 
 // Centralized error handling — must be last
 app.use(errorMiddleware);
