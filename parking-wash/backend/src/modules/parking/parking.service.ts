@@ -150,34 +150,43 @@ export class ParkingService {
       const durationMs = exitTime.getTime() - entryTime.getTime();
       const durationMinutes = Math.max(1, Math.floor(durationMs / 60000));
 
-      // Calculate fee
+      // Calculate fee using rule-based pricing
       let totalAmount: number;
-      let appliedDailyRate = request?.applyDailyRate || false;
+      let appliedDailyRate = false;
 
       if (record.vehicle_type_id) {
         // Use vehicle type pricing if available
         try {
           const vehicleType = await this.vehicleTypeService.getById(record.vehicle_type_id);
-          const rateSelection = PricingService.selectBestRate(
+          const breakdown = PricingService.calculateFee(
             entryTime,
             exitTime,
             vehicleType.hourlyRate,
-            vehicleType.dailyRate,
-            appliedDailyRate
+            vehicleType.dailyRate
           );
-          totalAmount = rateSelection.amount;
-          appliedDailyRate = rateSelection.selectedRate === 'daily';
+          totalAmount = breakdown.totalAmount;
+          appliedDailyRate = breakdown.dailyCharge > 0;
         } catch (error) {
           // Fallback to config rates if vehicle type not found
-          const hours = Math.ceil(durationMinutes / 60);
-          const fee = hours * config.hourlyRate;
-          totalAmount = Math.min(fee, config.dailyRateCap);
+          const breakdown = PricingService.calculateFee(
+            entryTime,
+            exitTime,
+            config.hourlyRate,
+            config.dailyRateCap
+          );
+          totalAmount = breakdown.totalAmount;
+          appliedDailyRate = breakdown.dailyCharge > 0;
         }
       } else {
-        // Use config rates for backward compatibility
-        const hours = Math.ceil(durationMinutes / 60);
-        const fee = hours * config.hourlyRate;
-        totalAmount = Math.min(fee, config.dailyRateCap);
+        // Use config rates
+        const breakdown = PricingService.calculateFee(
+          entryTime,
+          exitTime,
+          config.hourlyRate,
+          config.dailyRateCap
+        );
+        totalAmount = breakdown.totalAmount;
+        appliedDailyRate = breakdown.dailyCharge > 0;
       }
 
       // Update record with exit information

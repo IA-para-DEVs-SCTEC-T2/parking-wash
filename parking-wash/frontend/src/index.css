@@ -121,3 +121,52 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.85rem;
   color: #666;
 }
+
+/* ===== GLOBAL PRINT STYLES ===== */
+/* When body has .printing-receipt, hide everything except the receipt */
+@media print {
+  body.printing-receipt * {
+    visibility: hidden !important;
+  }
+
+  body.printing-receipt .receipt-overlay,
+  body.printing-receipt .receipt-overlay * {
+    visibility: visible !important;
+  }
+
+  body.printing-receipt .receipt-overlay {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: white !important;
+  }
+
+  body.printing-receipt .receipt-modal {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    animation: none !important;
+  }
+
+  body.printing-receipt .receipt-actions {
+    display: none !important;
+  }
+
+  body.printing-receipt .receipt-success {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.printing-receipt .toast-container {
+    display: none !important;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 5mm;
+  }
+}

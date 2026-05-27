@@ -3,12 +3,14 @@ import { checkOut } from '../../api/parking'
 import { ParkingRecord } from '../../types/parking'
 import { calculatePricing, type PricingCalculation } from '../../utils/pricing'
 import PricingCalculationComponent from './PricingCalculation'
+import CheckoutReceipt from './CheckoutReceipt'
 import './CheckoutModal.css'
 
 interface CheckoutModalProps {
   record: ParkingRecord | null
   onClose: () => void
   onSuccess: () => void
+  onToast?: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
 const PAYMENT_METHODS = [
@@ -18,13 +20,23 @@ const PAYMENT_METHODS = [
   { id: 'pix', label: 'PIX' },
 ]
 
-export default function CheckoutModal({ record, onClose, onSuccess }: CheckoutModalProps) {
+interface ReceiptInfo {
+  licensePlate: string
+  entryTime: string
+  exitTime: string
+  durationMinutes: number
+  totalAmount: number
+  paymentMethod: string
+  rateDescription: string
+}
+
+export default function CheckoutModal({ record, onClose, onSuccess, onToast }: CheckoutModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [applyDailyRate, setApplyDailyRate] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('credit_card')
   const [duration, setDuration] = useState<string>('')
   const [pricing, setPricing] = useState<PricingCalculation | null>(null)
+  const [receipt, setReceipt] = useState<ReceiptInfo | null>(null)
 
   // Update duration and pricing every second
   useEffect(() => {
@@ -41,7 +53,7 @@ export default function CheckoutModal({ record, onClose, onSuccess }: CheckoutMo
 
       setDuration(`${hours}h ${minutes}m ${seconds}s`)
 
-      // Calculate pricing
+      // Calculate pricing with new rules
       const calculation = calculatePricing(record.entryTime)
       setPricing(calculation)
     }
@@ -53,17 +65,44 @@ export default function CheckoutModal({ record, onClose, onSuccess }: CheckoutMo
 
   if (!record || !pricing) return null
 
+  // Show receipt after successful checkout
+  if (receipt) {
+    return (
+      <CheckoutReceipt
+        data={receipt}
+        onClose={() => {
+          setReceipt(null)
+          onClose()
+        }}
+      />
+    )
+  }
+
   const handleConfirm = async () => {
     setLoading(true)
     setError('')
 
     try {
-      await checkOut(record.id, {
-        applyDailyRate,
+      const result = await checkOut(record.id, {
+        applyDailyRate: pricing.rateType === 'daily' || pricing.rateType === 'mixed',
         paymentMethodId: paymentMethod,
       })
+
+      // Show toast
+      onToast?.(`Checkout de ${record.licensePlate} realizado! Valor: R$ ${(result.totalAmount || 0).toFixed(2)}`, 'success')
+
+      // Show receipt
+      setReceipt({
+        licensePlate: record.licensePlate,
+        entryTime: record.entryTime,
+        exitTime: result.exitTime || new Date().toISOString(),
+        durationMinutes: result.durationMinutes || 0,
+        totalAmount: result.totalAmount || 0,
+        paymentMethod,
+        rateDescription: pricing.description,
+      })
+
       onSuccess()
-      onClose()
     } catch (err: unknown) {
       let errorMsg = 'Erro ao fazer checkout'
 
@@ -74,6 +113,7 @@ export default function CheckoutModal({ record, onClose, onSuccess }: CheckoutMo
       }
 
       setError(errorMsg)
+      onToast?.(errorMsg, 'error')
     } finally {
       setLoading(false)
     }
@@ -101,36 +141,8 @@ export default function CheckoutModal({ record, onClose, onSuccess }: CheckoutMo
           </div>
         </div>
 
-        <div className="tariff-section">
-          <h3>Selecione a Tarifa</h3>
-          <div className="tariff-options">
-            <label className={`tariff-option ${!applyDailyRate ? 'selected' : ''}`}>
-              <input
-                type="radio"
-                name="tariff"
-                checked={!applyDailyRate}
-                onChange={() => setApplyDailyRate(false)}
-                disabled={loading}
-              />
-              <span className="tariff-label">Taxa Horária</span>
-              <span className="tariff-value">R$ 10.00/h</span>
-            </label>
-            <label className={`tariff-option ${applyDailyRate ? 'selected' : ''}`}>
-              <input
-                type="radio"
-                name="tariff"
-                checked={applyDailyRate}
-                onChange={() => setApplyDailyRate(true)}
-                disabled={loading}
-              />
-              <span className="tariff-label">Taxa Diária</span>
-              <span className="tariff-value">R$ 60.00/dia</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Pricing Calculation Component */}
-        <PricingCalculationComponent calculation={pricing} applyDailyRate={applyDailyRate} />
+        {/* Pricing Calculation - automatic rules */}
+        <PricingCalculationComponent calculation={pricing} />
 
         <div className="payment-section">
           <label htmlFor="payment-method">Método de Pagamento</label>
@@ -164,7 +176,7 @@ export default function CheckoutModal({ record, onClose, onSuccess }: CheckoutMo
             onClick={handleConfirm}
             disabled={loading}
           >
-            {loading ? 'Processando...' : 'Confirmar'}
+            {loading ? 'Processando...' : `Pagar R$ ${pricing.totalAmount.toFixed(2)}`}
           </button>
         </div>
       </div>

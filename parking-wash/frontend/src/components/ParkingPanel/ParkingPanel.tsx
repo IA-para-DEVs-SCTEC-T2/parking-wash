@@ -7,7 +7,11 @@ import CheckoutModal from './CheckoutModal'
 import CurrentVehiclesPanel from './CurrentVehiclesPanel'
 import './ParkingPanel.css'
 
-export default function ParkingPanel() {
+interface ParkingPanelProps {
+  onToast?: (message: string, type: 'success' | 'error' | 'info') => void
+}
+
+export default function ParkingPanel({ onToast }: ParkingPanelProps) {
   const [vehicles, setVehicles] = useState<ParkingRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<ParkingRecord | null>(null)
   const [loading, setLoading] = useState(false)
@@ -22,13 +26,13 @@ export default function ParkingPanel() {
       setVehicles(data)
     } catch (err: unknown) {
       let errorMsg = 'Erro ao carregar veículos'
-      
+
       if (err instanceof Error) {
         errorMsg = err.message
       } else if (err && typeof err === 'object' && 'error' in err) {
         errorMsg = (err as { error: string }).error
       }
-      
+
       setError(errorMsg)
     } finally {
       setLoading(false)
@@ -41,9 +45,14 @@ export default function ParkingPanel() {
     return () => clearInterval(interval)
   }, [])
 
+  const handleCheckInSuccess = () => {
+    fetchVehicles()
+    onToast?.('Check-in realizado com sucesso!', 'success')
+  }
+
   return (
     <div className="parking-panel">
-      <CheckInForm onSuccess={fetchVehicles} />
+      <CheckInForm onSuccess={handleCheckInSuccess} />
 
       <CurrentVehiclesPanel />
 
@@ -77,6 +86,7 @@ export default function ParkingPanel() {
         record={selectedRecord}
         onClose={() => setSelectedRecord(null)}
         onSuccess={fetchVehicles}
+        onToast={onToast}
       />
     </div>
   )
