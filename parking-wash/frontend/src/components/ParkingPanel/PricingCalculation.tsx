@@ -35,7 +35,7 @@ export default function PricingCalculationComponent({
           <div className="breakdown-row">
             <span className="breakdown-label">
               📅 {calculation.fullDays > 0
-                ? `${calculation.fullDays + (calculation.remainingHours > 6 ? 1 : 0)} diária${(calculation.fullDays + (calculation.remainingHours > 6 ? 1 : 0)) > 1 ? 's' : ''}`
+                ? `${calculation.fullDays} diária${calculation.fullDays > 1 ? 's' : ''}`
                 : 'Diária'
               }
             </span>
@@ -46,7 +46,7 @@ export default function PricingCalculationComponent({
         {calculation.hourlyCharge > 0 && (
           <div className="breakdown-row">
             <span className="breakdown-label">
-              ⏱️ {calculation.remainingHours}h × {formatBRL(calculation.hourlyRate)}
+              ⏱️ Frações: {formatBRL(calculation.hourlyCharge)}
             </span>
             <span className="breakdown-value">{formatBRL(calculation.hourlyCharge)}</span>
           </div>
@@ -57,9 +57,9 @@ export default function PricingCalculationComponent({
       <div className="pricing-note">
         <span className="note-icon">ℹ️</span>
         <span className="note-text">
-          {calculation.rateType === 'hourly' && `Até 6h: cobrança por hora`}
-          {calculation.rateType === 'daily' && `Acima de 6h: tarifa diária aplicada`}
-          {calculation.rateType === 'mixed' && `Diárias completas + horas restantes`}
+          {calculation.rateType === 'hourly' && `1ª hora R$ 10 + R$ 5 por fração de 30min`}
+          {calculation.rateType === 'daily' && `Diária aplicada (valor horário atingiu o teto)`}
+          {calculation.rateType === 'mixed' && `Diárias completas + frações excedentes`}
         </span>
       </div>
 

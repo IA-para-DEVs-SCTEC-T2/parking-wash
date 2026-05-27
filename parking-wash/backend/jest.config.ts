@@ -13,6 +13,7 @@ const config: Config = {
         tsconfig: {
           // Tests can import from src/ without rootDir restriction
           rootDir: '.',
+          types: ['node', 'jest'],
         },
       },
     ],

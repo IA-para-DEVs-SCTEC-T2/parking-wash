@@ -1,13 +1,28 @@
 /**
  * Pricing service for parking fee calculations
  *
- * Rules:
- * 1. Up to 6 hours: charge per hour (rounded up)
- * 2. More than 6 hours in a single day: charge daily rate
- * 3. Multiple days: charge full daily rates
- * 4. Remaining hours beyond full days: charge per hour (if ≤ 6h) or daily (if > 6h)
+ * REGRAS DE NEGÓCIO (atualizadas):
  *
- * Example: 2 days + 2 hours → 2 × daily + 2 × hourly = R$120 + R$20 = R$140
+ * 1. Primeira hora: R$ 10,00 (valor fixo, qualquer fração até 60 min)
+ * 2. Frações adicionais: R$ 5,00 por cada 30 minutos (ou fração de 30 min)
+ *    - 1h01 a 1h30 = R$ 15,00 (10 + 5)
+ *    - 1h31 a 2h00 = R$ 20,00 (10 + 5 + 5)
+ *    - 2h01 a 2h30 = R$ 25,00 (10 + 5 + 5 + 5)
+ * 3. Diária: R$ 60,00 — aplica automaticamente quando o cálculo horário >= R$ 60
+ *    (ou seja, a partir de ~6h o valor horário atinge R$ 60, então cobra diária)
+ * 4. Excedente após 24h: inicia nova cobrança (nova diária ou frações)
+ *
+ * Exemplos:
+ *   - 45 min → R$ 10,00
+ *   - 1h20 → R$ 15,00
+ *   - 2h → R$ 20,00
+ *   - 3h → R$ 30,00
+ *   - 6h → R$ 60,00 (diária)
+ *   - 8h → R$ 60,00 (diária, pois horário seria R$ 60+)
+ *   - 24h → R$ 60,00 (1 diária)
+ *   - 25h → R$ 70,00 (1 diária R$ 60 + 1h excedente R$ 10)
+ *   - 26h30 → R$ 80,00 (1 diária R$ 60 + 1h R$ 10 + 30min R$ 5 + 30min R$ 5)
+ *   - 48h → R$ 120,00 (2 diárias)
  */
 
 export interface RateSelection {
@@ -19,18 +34,21 @@ export interface PricingBreakdown {
   durationMinutes: number;
   totalHours: number;
   fullDays: number;
-  remainingHours: number;
+  remainingMinutes: number;
   dailyCharge: number;
   hourlyCharge: number;
   totalAmount: number;
   description: string;
 }
 
+/** Default pricing constants */
+const FIRST_HOUR_RATE = 10.00;
+const FRACTION_RATE = 5.00;
+const FRACTION_MINUTES = 30;
+const DAILY_RATE = 60.00;
+const MINUTES_PER_DAY = 1440; // 24h
+
 export class PricingService {
-  /** Hours threshold: above this, daily rate applies */
-  private static readonly DAILY_THRESHOLD_HOURS = 6;
-  /** Minutes in a day */
-  private static readonly MINUTES_PER_DAY = 1440;
 
   /**
    * Calculate duration in minutes between entry and exit
@@ -48,17 +66,64 @@ export class PricingService {
   }
 
   /**
+   * Calculate the fee for a period of minutes (within a single day, max 1440 min)
+   * Uses the progressive pricing rules:
+   * - First 60 min: firstHourRate
+   * - Each additional 30 min (or fraction): fractionRate
+   * - Cap at dailyRate
+   */
+  private static calculatePeriodFee(
+    minutes: number,
+    firstHourRate: number = FIRST_HOUR_RATE,
+    fractionRate: number = FRACTION_RATE,
+    dailyRate: number = DAILY_RATE
+  ): { fee: number; isDailyApplied: boolean; description: string } {
+    if (minutes <= 0) {
+      return { fee: 0, isDailyApplied: false, description: '' };
+    }
+
+    // First hour (any fraction up to 60 min)
+    if (minutes <= 60) {
+      return {
+        fee: firstHourRate,
+        isDailyApplied: false,
+        description: `1ª hora: R$ ${firstHourRate.toFixed(2)}`,
+      };
+    }
+
+    // Beyond first hour: calculate additional fractions of 30 min
+    const additionalMinutes = minutes - 60;
+    const additionalFractions = Math.ceil(additionalMinutes / FRACTION_MINUTES);
+    const hourlyTotal = firstHourRate + (additionalFractions * fractionRate);
+
+    // If hourly total >= daily rate, cap at daily rate
+    if (hourlyTotal >= dailyRate) {
+      return {
+        fee: dailyRate,
+        isDailyApplied: true,
+        description: `Diária: R$ ${dailyRate.toFixed(2)}`,
+      };
+    }
+
+    return {
+      fee: hourlyTotal,
+      isDailyApplied: false,
+      description: `1ª hora R$ ${firstHourRate.toFixed(2)} + ${additionalFractions}×30min R$ ${(additionalFractions * fractionRate).toFixed(2)}`,
+    };
+  }
+
+  /**
    * Calculate the parking fee using the defined rules:
-   * 1. ≤ 6h: hourly rate × hours (rounded up)
-   * 2. > 6h same day: daily rate
-   * 3. Multiple days: full days × daily + remainder hours
-   * 4. Remainder > 6h: add another daily
+   * 1. First hour: fixed rate (R$ 10)
+   * 2. Additional fractions: R$ 5 per 30 min
+   * 3. Daily cap: R$ 60 (when hourly exceeds daily)
+   * 4. After 24h: new period starts (new daily or fractions)
    */
   static calculateFee(
     entry: Date | string,
     exit: Date | string,
-    hourlyRate: number = 10,
-    dailyRate: number = 60
+    hourlyRate: number = FIRST_HOUR_RATE,
+    dailyRate: number = DAILY_RATE
   ): PricingBreakdown {
     if (hourlyRate < 0) throw new Error('Taxa horária não pode ser negativa');
     if (dailyRate < 0) throw new Error('Taxa diária não pode ser negativa');
@@ -67,42 +132,37 @@ export class PricingService {
     const totalHours = Math.ceil(durationMinutes / 60);
 
     // Full days (24h blocks)
-    const fullDays = Math.floor(durationMinutes / this.MINUTES_PER_DAY);
-    const remainingMinutes = durationMinutes % this.MINUTES_PER_DAY;
-    const remainingHours = Math.ceil(remainingMinutes / 60);
+    const fullDays = Math.floor(durationMinutes / MINUTES_PER_DAY);
+    const remainingMinutes = durationMinutes % MINUTES_PER_DAY;
 
     let dailyCharge = 0;
     let hourlyCharge = 0;
     let description = '';
 
-    if (fullDays === 0) {
-      // Single day stay
-      if (totalHours <= this.DAILY_THRESHOLD_HOURS) {
-        // Rule 1: ≤ 6h, charge per hour
-        hourlyCharge = totalHours * hourlyRate;
-        description = `${totalHours}h × R$ ${hourlyRate.toFixed(2)}`;
-      } else {
-        // Rule 2: > 6h, charge daily
-        dailyCharge = dailyRate;
-        description = `Diária (>${this.DAILY_THRESHOLD_HOURS}h)`;
-      }
-    } else {
-      // Multi-day stay
-      // Rule 3: full days at daily rate
+    // Full days: each 24h block = 1 daily rate
+    if (fullDays > 0) {
       dailyCharge = fullDays * dailyRate;
+      description = `${fullDays} diária${fullDays > 1 ? 's' : ''}: R$ ${dailyCharge.toFixed(2)}`;
+    }
 
-      if (remainingHours > 0) {
-        if (remainingHours <= this.DAILY_THRESHOLD_HOURS) {
-          // Rule 4a: remaining ≤ 6h, charge per hour
-          hourlyCharge = remainingHours * hourlyRate;
-          description = `${fullDays} diária${fullDays > 1 ? 's' : ''} + ${remainingHours}h × R$ ${hourlyRate.toFixed(2)}`;
+    // Remaining period after full days
+    if (remainingMinutes > 0) {
+      const periodResult = this.calculatePeriodFee(remainingMinutes, hourlyRate, FRACTION_RATE, dailyRate);
+
+      if (periodResult.isDailyApplied) {
+        dailyCharge += periodResult.fee;
+        if (fullDays > 0) {
+          description = `${fullDays + 1} diária${fullDays + 1 > 1 ? 's' : ''}: R$ ${dailyCharge.toFixed(2)}`;
         } else {
-          // Rule 4b: remaining > 6h, charge another daily
-          dailyCharge += dailyRate;
-          description = `${fullDays + 1} diária${fullDays + 1 > 1 ? 's' : ''} (restante >${this.DAILY_THRESHOLD_HOURS}h)`;
+          description = periodResult.description;
         }
       } else {
-        description = `${fullDays} diária${fullDays > 1 ? 's' : ''}`;
+        hourlyCharge = periodResult.fee;
+        if (fullDays > 0) {
+          description += ` + ${periodResult.description}`;
+        } else {
+          description = periodResult.description;
+        }
       }
     }
 
@@ -112,7 +172,7 @@ export class PricingService {
       durationMinutes,
       totalHours,
       fullDays,
-      remainingHours,
+      remainingMinutes,
       dailyCharge: Number(dailyCharge.toFixed(2)),
       hourlyCharge: Number(hourlyCharge.toFixed(2)),
       totalAmount,
@@ -122,13 +182,12 @@ export class PricingService {
 
   /**
    * Select the best rate for a parking session (backward compatible)
-   * Now uses the new rule-based calculation
    */
   static selectBestRate(
     entryTime: Date | string,
     exitTime: Date | string,
-    hourlyRate: number = 10,
-    dailyRate: number = 60,
+    hourlyRate: number = FIRST_HOUR_RATE,
+    dailyRate: number = DAILY_RATE,
     _preferDaily: boolean = false
   ): RateSelection {
     const breakdown = this.calculateFee(entryTime, exitTime, hourlyRate, dailyRate);

@@ -1,6 +1,7 @@
 /**
  * Router for parking endpoints
- * Defines routes for check-in, check-out, and listing parking records
+ * Defines routes for check-in, check-out, history, and listing parking records
+ * Requirements: 2.1, 3.1, 5.1
  */
 
 import { Router } from 'express';
@@ -13,8 +14,9 @@ const controller = new ParkingController();
 
 /**
  * POST /api/parking/checkin
- * Register a vehicle entry
- * Validates licensePlate using checkInSchema
+ * Register a vehicle entry with vehicleTypeId
+ * Validates licensePlate and vehicleTypeId using checkInSchema
+ * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
  */
 router.post(
   '/checkin',
@@ -24,7 +26,9 @@ router.post(
 
 /**
  * POST /api/parking/:id/checkout
- * Register a vehicle exit and calculate parking fee
+ * Register a vehicle exit, calculate parking fee, and process payment
+ * Accepts applyDailyRate and paymentMethodId in request body
+ * Requirements: 3.1, 3.2, 3.3, 3.4, 7.1, 7.2, 7.3, 7.4
  */
 router.post(
   '/:id/checkout',
@@ -43,8 +47,10 @@ router.get(
 
 /**
  * GET /api/parking/history
- * List last 10 exited parking records
+ * List last 10 exited parking records ordered by exit_time DESC
+ * Returns array of ExtendedParkingRecord (max 10)
  * MUST come before /:id routes to avoid being captured by dynamic parameter
+ * Requirements: 5.1, 5.2, 5.3, 5.4
  */
 router.get(
   '/history',

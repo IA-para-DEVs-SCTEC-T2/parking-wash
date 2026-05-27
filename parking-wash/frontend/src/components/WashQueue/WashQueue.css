@@ -35,3 +35,144 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Header with history toggle */
+.wash-queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.wash-queue-header h1 {
+  margin-bottom: 0;
+}
+
+.history-toggle-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  background: white;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-toggle-btn:hover {
+  background: #667eea;
+  color: white;
+}
+
+.history-toggle-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+/* History section */
+.wash-history {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.wash-history h2 {
+  margin: 0 0 0.25rem 0;
+  color: #333;
+}
+
+.history-subtitle {
+  color: #999;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 2px solid #eee;
+  color: #666;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.history-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+.history-table tr:hover td {
+  background: #f8f9ff;
+}
+
+.history-table .plate-cell {
+  font-family: monospace;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.history-table .price-cell {
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+/* Search in history */
+.history-search {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: monospace;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.clear-search-btn:hover {
+  color: #c33;
+}
+
+.search-results-count {
+  color: #667eea;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}

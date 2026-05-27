@@ -8,7 +8,7 @@ import { useToast } from './hooks/useToast'
 import './App.css'
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'parking' | 'wash'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'parking' | 'wash'>('parking')
   const { toasts, removeToast, success, error, info } = useToast()
 
   const handleToast = (message: string, type: 'success' | 'error' | 'info') => {
@@ -27,12 +27,6 @@ export default function App() {
 
         <nav className="app-nav">
           <button
-            className={`nav-button ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            Dashboard
-          </button>
-          <button
             className={`nav-button ${activeTab === 'parking' ? 'active' : ''}`}
             onClick={() => setActiveTab('parking')}
           >
@@ -43,6 +37,12 @@ export default function App() {
             onClick={() => setActiveTab('wash')}
           >
             Fila de Lavagem
+          </button>
+          <button
+            className={`nav-button ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            Dashboard
           </button>
         </nav>
 

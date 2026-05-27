@@ -33,3 +33,7 @@ export async function listWashOrders(status?: WashOrderStatus): Promise<WashOrde
     : '/api/wash-orders'
   return apiGet<WashOrder[]>(url)
 }
+
+export async function listWashOrdersHistory(limit: number = 50): Promise<WashOrder[]> {
+  return apiGet<WashOrder[]>(`/api/wash-orders/history?limit=${limit}`)
+}

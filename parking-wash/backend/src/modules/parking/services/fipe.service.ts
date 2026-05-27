@@ -1,47 +1,45 @@
 /**
- * FIPE Service
- * Integrates with FIPE API to retrieve vehicle information by license plate
- * Now uses SINESP as primary source with FIPE as fallback
- * Provides fallback data if both APIs are unavailable
+ * FIPE Service (Mock)
+ * Simulates vehicle lookup by license plate using a local mock database.
+ * Since there is no free/official API for license plate lookup in Brazil,
+ * this service provides realistic mock data for development and academic use.
+ *
+ * Uses an in-memory cache to avoid repeated lookups.
  */
 
-import { FipeVehicleData, FipeApiResponse, FipeCacheEntry } from './fipe.types';
-import { getVehicleDataFromSinesp } from './sinesp.service';
+import { FipeVehicleData, FipeCacheEntry } from './fipe.types';
+import { MOCK_VEHICLES } from './fipe-mock-data';
 
 /**
- * In-memory cache for FIPE data
- * Stores vehicle information to avoid repeated API calls
+ * In-memory cache for vehicle data
  * Cache expires after 24 hours
  */
 const fipeCache: Map<string, FipeCacheEntry> = new Map();
 
 /**
- * Fallback vehicle data when both SINESP and FIPE APIs are unavailable
- * Used to ensure application continues working even if external APIs fail
+ * Fallback vehicle data when plate is not found in mock database
  */
-const FALLBACK_VEHICLE_DATA: Record<string, FipeVehicleData> = {
-  default: {
-    brand: 'Desconhecido',
-    model: 'Modelo Desconhecido',
-    year: new Date().getFullYear(),
-    fuel: 'Gasolina',
-    fipeValue: 0,
-    vehicleType: 'Carro',
-    retrievedAt: new Date().toISOString(),
-  },
+const FALLBACK_VEHICLE_DATA: FipeVehicleData = {
+  brand: 'Desconhecido',
+  model: 'Modelo Desconhecido',
+  year: new Date().getFullYear(),
+  fuel: 'Gasolina',
+  fipeValue: 0,
+  vehicleType: 'Carro',
+  retrievedAt: new Date().toISOString(),
 };
 
 /**
  * Normalize license plate format
- * Converts to uppercase and removes hyphens
+ * Converts to uppercase and removes hyphens/spaces
  * Supports both old format (AAA-9999) and Mercosul format (AAA9A99)
  */
 function normalizeLicensePlate(plate: string): string {
-  return plate.toUpperCase().replace(/-/g, '');
+  return plate.toUpperCase().replace(/[-\s]/g, '');
 }
 
 /**
- * Check if cache entry is still valid
+ * Check if cache entry is still valid (24h TTL)
  */
 function isCacheValid(entry: FipeCacheEntry): boolean {
   const now = new Date();
@@ -50,111 +48,54 @@ function isCacheValid(entry: FipeCacheEntry): boolean {
 }
 
 /**
- * Get vehicle data from FIPE API
- * Attempts to fetch real data from FIPE API
- * Falls back to default data if API is unavailable
+ * Look up vehicle data from the mock database
+ * Returns mock data for known plates, fallback for unknown plates
  *
  * @param licensePlate - Vehicle license plate (AAA-9999 or AAA9A99 format)
- * @returns Vehicle data from FIPE or fallback data
+ * @returns Vehicle data from mock DB or fallback
  */
 export async function getVehicleDataFromFipe(
   licensePlate: string
 ): Promise<FipeVehicleData> {
-  try {
-    const normalizedPlate = normalizeLicensePlate(licensePlate);
+  const normalizedPlate = normalizeLicensePlate(licensePlate);
 
-    // Check cache first
-    const cached = fipeCache.get(normalizedPlate);
-    if (cached && isCacheValid(cached)) {
-      console.log(`[FIPE] Cache hit for plate: ${licensePlate}`);
-      return cached.data;
-    }
-
-    // Try SINESP first (primary source)
-    try {
-      console.log(`[FIPE] Attempting SINESP lookup for plate: ${licensePlate}`);
-      const vehicleData = await getVehicleDataFromSinesp(licensePlate);
-      
-      // Cache the result
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
-      fipeCache.set(normalizedPlate, {
-        licensePlate: normalizedPlate,
-        data: vehicleData,
-        cachedAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-      });
-
-      console.log(`[FIPE] Successfully retrieved data from SINESP for plate: ${licensePlate}`);
-      return vehicleData;
-    } catch (sinespError) {
-      console.warn(`[FIPE] SINESP lookup failed, trying FIPE fallback:`, sinespError);
-      
-      // Try to fetch from FIPE API as fallback
-      const vehicleData = await fetchFromFipeApi(normalizedPlate);
-
-      // Cache the result
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
-      fipeCache.set(normalizedPlate, {
-        licensePlate: normalizedPlate,
-        data: vehicleData,
-        cachedAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-      });
-
-      console.log(`[FIPE] Successfully retrieved data from FIPE for plate: ${licensePlate}`);
-      return vehicleData;
-    }
-  } catch (error) {
-    console.error(`[FIPE] Error fetching vehicle data for plate ${licensePlate}:`, error);
-    // Return fallback data to ensure application continues working
-    return FALLBACK_VEHICLE_DATA.default;
+  // Check cache first
+  const cached = fipeCache.get(normalizedPlate);
+  if (cached && isCacheValid(cached)) {
+    console.log(`[FIPE-MOCK] Cache hit for plate: ${licensePlate}`);
+    return cached.data;
   }
-}
 
-/**
- * Fetch vehicle data from FIPE API
- * This is a placeholder implementation
- * In production, integrate with actual FIPE API or use a library like:
- * - fipe-api-client
- * - axios with FIPE endpoint
- * - fetch API with FIPE endpoint
- *
- * @param normalizedPlate - Normalized license plate (without hyphens)
- * @returns Vehicle data from FIPE API
- */
-async function fetchFromFipeApi(normalizedPlate: string): Promise<FipeVehicleData> {
-  // Placeholder: In production, this would call the actual FIPE API
-  // Example using a hypothetical FIPE API client:
-  /*
-  const fipeClient = new FipeClient({
-    apiKey: process.env.FIPE_API_KEY,
+  // Look up in mock database
+  const mockData = MOCK_VEHICLES[normalizedPlate];
+
+  const vehicleData: FipeVehicleData = mockData
+    ? { ...mockData, retrievedAt: new Date().toISOString() }
+    : { ...FALLBACK_VEHICLE_DATA, retrievedAt: new Date().toISOString() };
+
+  if (mockData) {
+    console.log(`[FIPE-MOCK] Found vehicle for plate ${licensePlate}: ${mockData.brand} ${mockData.model}`);
+  } else {
+    console.log(`[FIPE-MOCK] Plate ${licensePlate} not in mock DB, returning fallback data`);
+  }
+
+  // Cache the result for 24 hours
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  fipeCache.set(normalizedPlate, {
+    licensePlate: normalizedPlate,
+    data: vehicleData,
+    cachedAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
   });
 
-  const response = await fipeClient.getVehicleByPlate(normalizedPlate);
-  return {
-    brand: response.brand,
-    model: response.model,
-    year: response.year,
-    fuel: response.fuel,
-    fipeValue: response.value,
-    vehicleType: response.type,
-    retrievedAt: new Date().toISOString(),
-  };
-  */
-
-  // For now, return fallback data
-  // This ensures the application works without external API dependency
-  return FALLBACK_VEHICLE_DATA.default;
+  return vehicleData;
 }
 
 /**
- * Get vehicle data with fallback
- * Attempts to get real FIPE data, falls back to default if unavailable
- *
+ * Get vehicle data (main entry point)
  * @param licensePlate - Vehicle license plate
- * @returns Vehicle data (real or fallback)
+ * @returns Vehicle data (mock or fallback)
  */
 export async function getVehicleData(licensePlate: string): Promise<FipeVehicleData> {
   return getVehicleDataFromFipe(licensePlate);
@@ -166,12 +107,11 @@ export async function getVehicleData(licensePlate: string): Promise<FipeVehicleD
  */
 export function clearFipeCache(): void {
   fipeCache.clear();
-  console.log('[FIPE] Cache cleared');
+  console.log('[FIPE-MOCK] Cache cleared');
 }
 
 /**
  * Get cache statistics
- * Returns information about cached entries
  */
 export function getFipeCacheStats(): {
   totalEntries: number;

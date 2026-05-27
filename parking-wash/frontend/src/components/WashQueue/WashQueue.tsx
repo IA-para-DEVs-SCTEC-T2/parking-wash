@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { WashOrder } from '../../types/washOrders'
-import { listWashOrders } from '../../api/washOrders'
+import { listWashOrders, listWashOrdersHistory } from '../../api/washOrders'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
 import { NewOrderForm } from './NewOrderForm'
 import { StatusColumn } from './StatusColumn'
@@ -8,8 +8,11 @@ import './WashQueue.css'
 
 export function WashQueue(): JSX.Element {
   const [orders, setOrders] = useState<WashOrder[]>([])
+  const [historyOrders, setHistoryOrders] = useState<WashOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [searchPlate, setSearchPlate] = useState('')
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
@@ -33,6 +36,15 @@ export function WashQueue(): JSX.Element {
     }
   }, [])
 
+  const fetchHistory = useCallback(async () => {
+    try {
+      const data = await listWashOrdersHistory(50)
+      setHistoryOrders(data)
+    } catch (err) {
+      console.error('Erro ao carregar histórico:', err)
+    }
+  }, [])
+
   // Auto-refresh every 30 seconds
   useAutoRefresh(fetchOrders, 30000)
 
@@ -44,6 +56,13 @@ export function WashQueue(): JSX.Element {
     fetchOrders()
   }
 
+  const handleToggleHistory = () => {
+    if (!showHistory) {
+      fetchHistory()
+    }
+    setShowHistory(!showHistory)
+  }
+
   // Group orders by status
   const waitingOrders = orders.filter((o) => o.status === 'Waiting')
   const inProgressOrders = orders.filter((o) => o.status === 'InProgress')
@@ -51,7 +70,15 @@ export function WashQueue(): JSX.Element {
 
   return (
     <div className="wash-queue">
-      <h1>Fila de Lavagem</h1>
+      <div className="wash-queue-header">
+        <h1>Fila de Lavagem</h1>
+        <button
+          className={`history-toggle-btn ${showHistory ? 'active' : ''}`}
+          onClick={handleToggleHistory}
+        >
+          {showHistory ? '← Voltar à Fila' : '📋 Histórico'}
+        </button>
+      </div>
 
       {error && (
         <div className="error-message">
@@ -59,27 +86,101 @@ export function WashQueue(): JSX.Element {
         </div>
       )}
 
-      <NewOrderForm onOrderCreated={handleOrderCreated} />
+      {!showHistory ? (
+        <>
+          <NewOrderForm onOrderCreated={handleOrderCreated} />
 
-      {loading && <div className="loading">Carregando...</div>}
+          {loading && <div className="loading">Carregando...</div>}
 
-      <div className="status-columns">
-        <StatusColumn
-          status="Waiting"
-          orders={waitingOrders}
-          onOrderUpdated={handleOrderUpdated}
-        />
-        <StatusColumn
-          status="InProgress"
-          orders={inProgressOrders}
-          onOrderUpdated={handleOrderUpdated}
-        />
-        <StatusColumn
-          status="Completed"
-          orders={completedOrders}
-          onOrderUpdated={handleOrderUpdated}
-        />
-      </div>
+          <div className="status-columns">
+            <StatusColumn
+              status="Waiting"
+              orders={waitingOrders}
+              onOrderUpdated={handleOrderUpdated}
+            />
+            <StatusColumn
+              status="InProgress"
+              orders={inProgressOrders}
+              onOrderUpdated={handleOrderUpdated}
+            />
+            <StatusColumn
+              status="Completed"
+              orders={completedOrders}
+              onOrderUpdated={handleOrderUpdated}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="wash-history">
+          <h2>Histórico de Lavagens Concluídas</h2>
+          <p className="history-subtitle">Últimas 50 lavagens realizadas (todos os dias)</p>
+
+          <div className="history-search">
+            <input
+              type="text"
+              placeholder="🔍 Buscar por placa (ex: ABC-1234)"
+              value={searchPlate}
+              onChange={(e) => setSearchPlate(e.target.value.toUpperCase())}
+              className="search-input"
+            />
+            {searchPlate && (
+              <button className="clear-search-btn" onClick={() => setSearchPlate('')}>✕</button>
+            )}
+          </div>
+          
+          {(() => {
+            const filtered = searchPlate
+              ? historyOrders.filter((o) =>
+                  o.licensePlate.replace(/-/g, '').includes(searchPlate.replace(/-/g, ''))
+                )
+              : historyOrders;
+
+            if (filtered.length === 0) {
+              return (
+                <div className="empty-history">
+                  {searchPlate
+                    ? `Nenhuma lavagem encontrada para a placa "${searchPlate}".`
+                    : 'Nenhuma lavagem concluída encontrada.'}
+                </div>
+              );
+            }
+
+            return (
+              <>
+                {searchPlate && (
+                  <p className="search-results-count">
+                    {filtered.length} resultado{filtered.length > 1 ? 's' : ''} encontrado{filtered.length > 1 ? 's' : ''}
+                  </p>
+                )}
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Placa</th>
+                      <th>Serviço</th>
+                      <th>Tipo Veículo</th>
+                      <th>Criado em</th>
+                      <th>Concluído em</th>
+                      <th>Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((order) => (
+                      <tr key={order.id}>
+                        <td className="plate-cell">{order.licensePlate}</td>
+                        <td>{order.washService.name}</td>
+                        <td>{order.vehicleType?.name || '—'}</td>
+                        <td>{new Date(order.createdAt).toLocaleString('pt-BR')}</td>
+                        <td>{order.completedAt ? new Date(order.completedAt).toLocaleString('pt-BR') : '—'}</td>
+                        <td className="price-cell">R$ {order.washService.price.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            );
+          })()}
+        </div>
+      )}
     </div>
   )
 }

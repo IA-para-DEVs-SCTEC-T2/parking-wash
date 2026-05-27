@@ -31,6 +31,13 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class PaymentRequiredError extends AppError {
+  constructor(message: string) {
+    super(message, 402);
+    this.name = 'PaymentRequiredError';
+  }
+}
+
 export class ServiceUnavailableError extends AppError {
   constructor(message: string) {
     super(message, 503);

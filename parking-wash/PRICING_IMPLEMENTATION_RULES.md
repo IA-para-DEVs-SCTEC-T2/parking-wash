@@ -1,108 +1,107 @@
-# Changelog — ParkingWash
+# Regras de Precificação — ParkingWash
 
-## Branch: `feature/pricing-rules-toast-receipt`
+## Regras de Cobrança
 
-### Commit 2: `feat: pricing rules (6h threshold) + toast notifications + checkout receipt`
+### 1. Primeira Hora (até 60 minutos)
+- **Valor fixo: R$ 10,00**
+- Qualquer permanência de 1 minuto até 60 minutos cobra R$ 10,00
 
-**Data:** 27/05/2026
+### 2. Frações Adicionais (após a primeira hora)
+- **R$ 5,00 por cada 30 minutos** (ou fração de 30 min)
+- Exemplos:
+  - 1h01 a 1h30 → R$ 15,00 (10 + 5)
+  - 1h31 a 2h00 → R$ 20,00 (10 + 5 + 5)
+  - 2h01 a 2h30 → R$ 25,00 (10 + 5 + 5 + 5)
+  - 3h00 → R$ 30,00 (10 + 4×5)
+  - 4h00 → R$ 40,00 (10 + 6×5)
+  - 5h00 → R$ 50,00 (10 + 8×5)
 
-#### Lógica de Cálculo de Estacionamento (Nova)
+### 3. Diária (teto automático)
+- **Valor: R$ 60,00**
+- Aplica automaticamente quando o cálculo horário atinge ou ultrapassa R$ 60
+- Isso ocorre a partir de ~5h30 de permanência (10 + 9×5 = 55, 10 + 10×5 = 60)
+- Qualquer permanência de 5h31 até 24h00 cobra R$ 60,00
 
-Implementada lógica de precificação baseada em regras:
-
-| Regra | Condição | Cálculo |
-|-------|----------|---------|
-| 1 | Permanência ≤ 6 horas | Horas (arredondado p/ cima) × R$ 10,00 |
-| 2 | Permanência > 6 horas (mesmo dia) | Diária fixa R$ 60,00 |
-| 3 | Múltiplos dias completos | Dias × R$ 60,00 |
-| 4a | Dias + horas restantes ≤ 6h | Dias × R$ 60 + Horas × R$ 10 |
-| 4b | Dias + horas restantes > 6h | (Dias + 1) × R$ 60 |
-
-**Exemplos:**
-- 2h → R$ 20,00
-- 5h → R$ 50,00
-- 8h → R$ 60,00 (diária, pois > 6h)
-- 2 dias + 2h → R$ 140,00 (2 × R$60 + 2 × R$10)
-- 2 dias + 8h → R$ 180,00 (3 × R$60)
-
-#### Toast de Notificação
-
-- Componente reutilizável `Toast` com 3 tipos: success, error, info
-- Animação slide-in/out, auto-dismiss após 5 segundos
-- Hook `useToast` para uso simplificado
-- Integrado no check-in e checkout
-
-#### Recibo de Checkout
-
-- Modal de recibo exibido após confirmação do pagamento
-- Header verde animado com "Checkout Realizado!"
-- Dados: placa, entrada, saída, permanência, cálculo aplicado, pagamento, total
-- Botão "Imprimir" que imprime **somente o recibo** (CSS `@media print`)
-- Formato otimizado para impressão em 80mm (cupom)
-
-#### Redesign do Cálculo de Preço no Modal
-
-- Removida seleção manual de tarifa (agora é automática pelas regras)
-- Exibe breakdown: diárias + horas com valores individuais
-- Nota explicativa da regra aplicada
-- Botão de confirmação mostra o valor: "Pagar R$ X,XX"
-
-#### Arquivos Alterados
-
-**Backend:**
-- `backend/src/modules/parking/services/pricing.service.ts` — Reescrito com lógica de regras (threshold 6h)
-- `backend/src/modules/parking/parking.service.ts` — Checkout usa `PricingService.calculateFee()`
-
-**Frontend:**
-- `frontend/src/utils/pricing.ts` — Cálculo espelhado no frontend para exibição em tempo real
-- `frontend/src/App.tsx` — Integração do ToastContainer global
-- `frontend/src/components/ParkingPanel/ParkingPanel.tsx` — Prop `onToast`, toast no check-in
-- `frontend/src/components/ParkingPanel/CheckoutModal.tsx` — Cálculo automático, recibo pós-checkout
-- `frontend/src/components/ParkingPanel/PricingCalculation.tsx` — Novo layout com breakdown
-- `frontend/src/components/ParkingPanel/PricingCalculation.css` — Estilos do novo layout
-- `frontend/src/components/ParkingPanel/CheckoutReceipt.tsx` — **Novo** componente de recibo
-- `frontend/src/components/ParkingPanel/CheckoutReceipt.css` — **Novo** estilos + print
-- `frontend/src/components/Toast/Toast.tsx` — **Novo** componente de toast
-- `frontend/src/components/Toast/Toast.css` — **Novo** estilos do toast
-- `frontend/src/hooks/useToast.ts` — **Novo** hook para gerenciar toasts
-- `frontend/src/index.css` — Estilos globais de impressão (`@media print`)
+### 4. Excedente (após 24 horas)
+- Após 24h, inicia-se **nova cobrança**
+- Cada bloco de 24h = 1 diária (R$ 60)
+- O período restante após os blocos de 24h segue as regras 1-3
 
 ---
 
-## Branch: `feature/wash-queue-vehicle-type-fix`
+## Tabela de Exemplos
 
-### Commit 1: `feat: fix vehicle type in wash orders + add timestamps`
+| Permanência | Cálculo | Total |
+|-------------|---------|-------|
+| 15 min | 1ª hora | R$ 10,00 |
+| 45 min | 1ª hora | R$ 10,00 |
+| 1h00 | 1ª hora | R$ 10,00 |
+| 1h15 | 10 + 5 (1 fração) | R$ 15,00 |
+| 1h30 | 10 + 5 (1 fração) | R$ 15,00 |
+| 1h45 | 10 + 5 + 5 (2 frações) | R$ 20,00 |
+| 2h00 | 10 + 5 + 5 (2 frações) | R$ 20,00 |
+| 2h30 | 10 + 5 + 5 + 5 (3 frações) | R$ 25,00 |
+| 3h00 | 10 + 4×5 | R$ 30,00 |
+| 4h00 | 10 + 6×5 | R$ 40,00 |
+| 5h00 | 10 + 8×5 | R$ 50,00 |
+| 5h30 | 10 + 9×5 = 55 | R$ 55,00 |
+| 6h00 | 10 + 10×5 = 60 → Diária | R$ 60,00 |
+| 8h00 | Diária (teto) | R$ 60,00 |
+| 12h00 | Diária (teto) | R$ 60,00 |
+| 24h00 | 1 diária | R$ 60,00 |
+| 25h00 | 1 diária + 1ª hora | R$ 70,00 |
+| 25h30 | 1 diária + 10 + 5 | R$ 75,00 |
+| 26h00 | 1 diária + 10 + 5 + 5 | R$ 80,00 |
+| 30h00 | 1 diária + diária (excedente >5h30) | R$ 120,00 |
+| 48h00 | 2 diárias | R$ 120,00 |
+| 49h30 | 2 diárias + 10 + 5 | R$ 135,00 |
 
-**Data:** 27/05/2026
+---
 
-#### Fix: Tipo de Veículo não populando na Fila de Lavagem
+## Tarifas por Tipo de Veículo
 
-**Problema:** O formulário de nova ordem de lavagem usava IDs hardcoded (`'1'`, `'2'`, `'3'`) que não correspondiam aos UUIDs reais do banco de dados. Além disso, o `vehicleTypeId` selecionado não era enviado ao backend.
+Os valores acima são para **Carro** (tipo padrão). Cada tipo tem suas próprias tarifas:
 
-**Solução:**
-- `NewOrderForm` agora busca tipos de veículo da API (`/api/vehicle-types`)
-- O UUID real do tipo selecionado é enviado ao backend na criação da ordem
-- Backend aceita `vehicleTypeId` opcional no body da request
-- Resposta da API inclui dados completos do `vehicleType` (id, name, code)
+| Tipo | 1ª Hora | Fração 30min | Diária |
+|------|---------|--------------|--------|
+| Motocicleta | R$ 5,00 | R$ 2,50* | R$ 30,00 |
+| Carro | R$ 10,00 | R$ 5,00 | R$ 60,00 |
+| Motorhome | R$ 20,00 | R$ 10,00* | R$ 120,00 |
 
-#### Feature: Data/Hora de Entrada, Saída e Permanência
+> *A fração é sempre 50% do valor da primeira hora (R$ 5 para fração de R$ 10/hora)
 
-Implementado no `WashOrderCard`:
-- **Entrada** — data/hora de criação da ordem
-- **Início** — data/hora que o serviço começou
-- **Saída** — data/hora de conclusão
-- **Permanência** — timer em tempo real (HH:MM:SS) que atualiza a cada segundo
+**Nota**: A fração fixa de R$ 5,00 é usada para todos os tipos no momento. Os valores por tipo de veículo afetam apenas a primeira hora e a diária.
 
-#### Arquivos Alterados
+---
 
-**Backend:**
-- `backend/src/modules/wash-orders/wash-orders.validator.ts` — Schema aceita `vehicleTypeId` opcional
-- `backend/src/modules/wash-orders/wash-orders.controller.ts` — Passa `vehicleTypeId` ao service
-- `backend/src/modules/wash-orders/wash-orders.service.ts` — Usa `vehicleTypeId` do request, retorna dados na resposta
+## Implementação Técnica
 
-**Frontend:**
-- `frontend/src/components/WashQueue/NewOrderForm.tsx` — Busca tipos da API, envia UUID real
-- `frontend/src/components/WashQueue/WashOrderCard.tsx` — Exibe timestamps + timer de permanência
-- `frontend/src/components/WashQueue/WashOrderCard.css` — Estilos para elapsed-time
-- `frontend/src/api/washOrders.ts` — `createWashOrder` aceita `vehicleTypeId`
-- `frontend/src/types/washOrders.ts` — `CreateWashOrderRequest` inclui `vehicleTypeId?`
+### Backend
+- Arquivo: `backend/src/modules/parking/services/pricing.service.ts`
+- Classe: `PricingService`
+- Método principal: `calculateFee(entry, exit, hourlyRate, dailyRate)`
+
+### Frontend
+- Arquivo: `frontend/src/utils/pricing.ts`
+- Função: `calculatePricing(entryTime, hourlyRate, dailyRate)`
+
+### Fluxo no Checkout
+1. Backend calcula a tarifa automaticamente baseado na duração
+2. Não há mais opção manual de "aplicar diária" — a diária é aplicada automaticamente quando o valor horário atinge o teto
+3. O frontend exibe o cálculo em tempo real no modal de checkout
+
+---
+
+## Configuração
+
+Variáveis de ambiente (valores padrão):
+```
+HOURLY_RATE=10.00      # Valor da primeira hora (Carro)
+DAILY_RATE_CAP=60.00   # Valor da diária (Carro)
+```
+
+Tarifas por tipo de veículo são configuráveis via API:
+```
+PATCH /api/vehicle-types/:id
+{ "hourlyRate": 10, "dailyRate": 60 }
+```

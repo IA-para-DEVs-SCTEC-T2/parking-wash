@@ -16,14 +16,16 @@ import {
   ConflictError,
   NotFoundError,
   ValidationError,
+  PaymentRequiredError,
   ServiceUnavailableError,
 } from '../../middleware/errors';
 import { PricingService } from './services/pricing.service';
+import { PaymentService } from './services/payment.service';
 import { VehicleTypeService } from '../vehicle-types/vehicle-type.service';
-import { getVehicleData } from './services/fipe.service';
 
 export class ParkingService {
   private vehicleTypeService = new VehicleTypeService();
+  private paymentService = new PaymentService();
 
   /**
    * Register a vehicle entry into the parking lot
@@ -96,7 +98,6 @@ export class ParkingService {
         licensePlate: newRecord.license_plate,
         entryTime: newRecord.entry_time,
         status: newRecord.status,
-        vehicleInfo: await getVehicleData(licensePlate).catch(() => undefined),
       };
     } catch (error) {
       if (
@@ -119,6 +120,7 @@ export class ParkingService {
    * @returns CheckOutResponse with parking details and calculated fee
    * @throws NotFoundError if parking record not found
    * @throws ValidationError if vehicle already checked out
+   * @throws PaymentRequiredError if payment processing fails
    * @throws ServiceUnavailableError if database operation fails
    */
   async checkOut(id: string, request?: CheckOutRequest): Promise<CheckOutResponse> {
@@ -150,7 +152,8 @@ export class ParkingService {
       const durationMs = exitTime.getTime() - entryTime.getTime();
       const durationMinutes = Math.max(1, Math.floor(durationMs / 60000));
 
-      // Calculate fee using rule-based pricing
+      // Calculate fee using progressive pricing rules
+      // Rules: 1ª hora R$10, frações de 30min R$5, diária R$60 (cap automático)
       let totalAmount: number;
       let appliedDailyRate = false;
 
@@ -178,7 +181,7 @@ export class ParkingService {
           appliedDailyRate = breakdown.dailyCharge > 0;
         }
       } else {
-        // Use config rates
+        // Use config rates (no vehicle type)
         const breakdown = PricingService.calculateFee(
           entryTime,
           exitTime,
@@ -189,17 +192,79 @@ export class ParkingService {
         appliedDailyRate = breakdown.dailyCharge > 0;
       }
 
-      // Update record with exit information
+      totalAmount = parseFloat(totalAmount.toFixed(2));
+
+      // Process payment if paymentMethodId is provided
+      if (request?.paymentMethodId) {
+        const vehicleTypeName = record.vehicle_type_id
+          ? (await this.vehicleTypeService.getById(record.vehicle_type_id).catch(() => null))?.name || 'unknown'
+          : 'unknown';
+
+        const paymentResponse = await this.paymentService.processPayment({
+          amount: totalAmount,
+          currency: 'BRL',
+          description: record.license_plate,
+          metadata: {
+            parkingId: id,
+            vehicleType: vehicleTypeName,
+          },
+        });
+
+        if (paymentResponse.status === 'failed') {
+          // Payment failed — do NOT update status to "Exited"
+          throw new PaymentRequiredError(
+            paymentResponse.message || 'Falha no processamento do pagamento'
+          );
+        }
+
+        // Payment succeeded — update record with payment info and status = "Exited"
+        const { data: updatedRecord, error: updateError } = await supabase
+          .from('parking_records')
+          .update({
+            status: 'Exited',
+            exit_time: exitTime.toISOString(),
+            duration_minutes: durationMinutes,
+            total_amount: totalAmount,
+            applied_daily_rate: appliedDailyRate,
+            payment_status: 'Completed',
+            payment_method_id: request.paymentMethodId,
+            payment_transaction_id: paymentResponse.transactionId,
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) {
+          throw new ServiceUnavailableError(
+            'Serviço temporariamente indisponível. Tente novamente em instantes'
+          );
+        }
+
+        return {
+          id: updatedRecord.id,
+          licensePlate: updatedRecord.license_plate,
+          entryTime: updatedRecord.entry_time,
+          exitTime: updatedRecord.exit_time,
+          durationMinutes: updatedRecord.duration_minutes,
+          totalAmount: updatedRecord.total_amount,
+          status: updatedRecord.status,
+          appliedDailyRate: updatedRecord.applied_daily_rate,
+          paymentStatus: updatedRecord.payment_status,
+          
+        };
+      }
+
+      // No paymentMethodId — update record without payment processing (legacy flow)
       const { data: updatedRecord, error: updateError } = await supabase
         .from('parking_records')
         .update({
           status: 'Exited',
           exit_time: exitTime.toISOString(),
           duration_minutes: durationMinutes,
-          total_amount: parseFloat(totalAmount.toFixed(2)),
+          total_amount: totalAmount,
           applied_daily_rate: appliedDailyRate,
-          payment_status: request?.paymentMethodId ? 'Pending' : 'Pending',
-          payment_method_id: request?.paymentMethodId || null,
+          payment_status: 'Pending',
+          payment_method_id: null,
         })
         .eq('id', id)
         .select()
@@ -221,12 +286,13 @@ export class ParkingService {
         status: updatedRecord.status,
         appliedDailyRate: updatedRecord.applied_daily_rate,
         paymentStatus: updatedRecord.payment_status,
-        vehicleInfo: await getVehicleData(updatedRecord.license_plate).catch(() => undefined),
+        
       };
     } catch (error) {
       if (
         error instanceof NotFoundError ||
         error instanceof ValidationError ||
+        error instanceof PaymentRequiredError ||
         error instanceof ServiceUnavailableError
       ) {
         throw error;
