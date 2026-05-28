@@ -1,26 +1,239 @@
 # 🅿️ ParkingWash
 
-Sistema de gerenciamento de estacionamento e lavagem de veículos.
+## Descrição do Problema
 
-## Funcionalidades
+Estacionamentos e lava-rápidos enfrentam dificuldades no controle manual de entradas, saídas, cálculo de tarifas e gestão de filas de lavagem. Erros de cobrança, falta de visibilidade sobre ocupação e ausência de histórico para auditoria são problemas recorrentes.
 
-### Estacionamento
-- Check-in de veículos com seleção de tipo (Moto, Carro, Motorhome)
-- Checkout com cálculo automático de tarifa progressiva
-- Consulta de dados do veículo por placa (mock FIPE)
-- Histórico de checkouts com busca por placa e paginação
-- Indicador visual de vagas (ocupadas/livres)
+O **ParkingWash** resolve esses problemas oferecendo um sistema web completo para gerenciamento de estacionamento e lavagem de veículos, com cálculo automático de tarifas, controle de vagas em tempo real, histórico auditável e dashboard operacional.
 
-### Lavagem
-- Fila de lavagem com status (Aguardando → Em Andamento → Concluído)
-- Histórico de lavagens com busca por placa e paginação
-- Indicador de vagas de lavagem
+---
 
-### Dashboard
-- Faturamento total do dia (estacionamento + lavagem)
-- Métricas separadas por atividade
-- Últimos checkouts e lavagens
-- Configurações (tarifas, vagas)
+## Ferramentas de IA Utilizadas
+
+| Ferramenta | Etapa | Uso |
+|------------|-------|-----|
+| **Kiro** (IDE com IA) | Todas | Geração de código, refatoração, debugging, testes |
+| **Chain of Thought** | Geração de código | Decomposição de problemas complexos em passos |
+| **Prompts iterativos** | Refinamento | Correção de bugs e melhoria incremental |
+| **Análise de contexto** | Arquitetura | Decisões de design baseadas no código existente |
+
+### Etapas com IA:
+1. **Especificação** — Definição de requisitos e arquitetura
+2. **Geração de código** — Módulos backend e componentes frontend
+3. **Refatoração** — PricingService (SOLID), remoção de dependências externas
+4. **Testes** — Geração de testes unitários e property-based
+5. **CI/CD** — Configuração do GitHub Actions
+6. **Documentação** — README, docstrings, changelogs
+
+---
+
+## Padrões de Prompting Aplicados
+
+### Padrão 1: Chain of Thought (Decomposição)
+```
+Prompt: "Implemente o PricingService com as seguintes regras:
+1. Primeira hora: R$ 10 fixo
+2. Frações adicionais: R$ 5 por 30 min
+3. Diária: R$ 60 (teto automático)
+4. Excedente 24h: nova cobrança
+Analise a necessidade, exclua somente o que é necessário, 
+e execute sem quebrar o projeto."
+```
+**Resultado:** Serviço implementado com lógica progressiva, testes e documentação.
+
+### Padrão 2: Contexto Estruturado + Restrições
+```
+Prompt: "Crie um mock FIPE com 26 veículos. 
+Como não existe API gratuita para consulta de placas no Brasil,
+use dados fictícios realistas. Mantenha a mesma interface 
+(getVehicleData). Não quebre o projeto."
+```
+**Resultado:** Mock local substituiu APIs externas não funcionais, mantendo compatibilidade.
+
+### Padrão 3: Análise Antes de Ação
+```
+Prompt: "Analise a imagem do erro. O checkout mostra R$ 10 
+mas deveria usar a tarifa do Motorhome (R$ 25/hora). 
+Investigue o fluxo completo antes de corrigir."
+```
+**Resultado:** Identificação de que o CheckoutModal não passava a tarifa do tipo de veículo.
+
+---
+
+## Arquitetura
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Frontend (React + Vite)                │
+│  ParkingPanel │ WashQueue │ Dashboard │ SettingsModal    │
+└───────────────────────────┬─────────────────────────────┘
+                            │ HTTP (REST API)
+┌───────────────────────────┴─────────────────────────────┐
+│                   Backend (Express + TypeScript)         │
+│  Controllers → Services → Supabase Client               │
+│  Modules: parking, wash-orders, vehicle-types,          │
+│           billing, notifications, settings              │
+└───────────────────────────┬─────────────────────────────┘
+                            │ PostgreSQL
+┌───────────────────────────┴─────────────────────────────┐
+│                   Supabase (PostgreSQL)                  │
+│  Tables: parking_records, vehicle_types,                │
+│          wash_orders, wash_services                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Padrão arquitetural:** MVC em camadas (Controller → Service → Database)
+
+---
+
+## Instalação e Execução
+
+### Pré-requisitos
+- Node.js 20+
+- npm
+- Conta no Supabase (para banco de dados)
+
+### 1. Clonar o repositório
+```bash
+git clone https://github.com/IA-para-DEVs-SCTEC-T2/parking-wash.git
+cd parking-wash
+```
+
+### 2. Instalar dependências
+```bash
+cd backend && npm install
+cd ../frontend && npm install
+```
+
+### 3. Configurar variáveis de ambiente
+```bash
+cp backend/.env.example backend/.env
+# Editar backend/.env com suas credenciais do Supabase
+```
+
+### 4. Iniciar o projeto
+```bash
+# Terminal 1 - Backend (porta 3333)
+cd backend && npm run dev
+
+# Terminal 2 - Frontend (porta 5173)
+cd frontend && npm run dev
+```
+
+### 5. Acessar
+- Frontend: http://localhost:5173
+- API: http://localhost:3333
+
+---
+
+## Cenários de Uso
+
+### Cenário 1: Check-in e Checkout de Veículo
+
+**Entrada:**
+```json
+POST /api/parking/checkin
+{ "licensePlate": "ABC-1234", "vehicleTypeId": "uuid-do-tipo-carro" }
+```
+
+**Saída (201):**
+```json
+{
+  "id": "uuid-do-registro",
+  "licensePlate": "ABC-1234",
+  "entryTime": "2026-05-27T15:00:00.000Z",
+  "status": "Parked"
+}
+```
+
+**Checkout após 1h30:**
+```json
+POST /api/parking/uuid-do-registro/checkout
+{ "paymentMethodId": "credit_card" }
+```
+
+**Saída (200):**
+```json
+{
+  "totalAmount": 15.00,
+  "durationMinutes": 90,
+  "status": "Exited",
+  "paymentStatus": "Completed"
+}
+```
+> Cálculo: 1ª hora R$10 + 1 fração de 30min R$5 = R$15
+
+### Cenário 2: Fila de Lavagem
+
+**Entrada:**
+```json
+POST /api/wash-orders
+{ "licensePlate": "XYZ-5678", "washServiceId": "uuid-lavagem-completa" }
+```
+
+**Saída (201):**
+```json
+{
+  "id": "uuid-ordem",
+  "licensePlate": "XYZ-5678",
+  "washService": { "name": "Lavagem Completa", "price": 80.00 },
+  "status": "Waiting"
+}
+```
+
+**Avançar status:**
+```json
+PATCH /api/wash-orders/uuid-ordem/status
+{ "status": "InProgress" }
+// Depois:
+{ "status": "Completed" }
+```
+
+---
+
+## Caso de Saída Incorreta da IA
+
+### Problema: API FIPE retornando "Desconhecido" para todas as placas
+
+**Contexto:** A IA gerou integração com SINESP e FIPE APIs para consulta de veículos por placa.
+
+**Saída incorreta:** Todas as consultas retornavam dados genéricos ("Marca: Desconhecido, Modelo: Desconhecido") porque:
+1. A API do SINESP não é pública (requer autenticação do app mobile)
+2. A API FIPE não faz lookup por placa (apenas por código FIPE)
+
+**Análise crítica:** A IA assumiu que existiam APIs REST públicas para consulta de placas no Brasil, mas isso não existe por questões legais (LGPD) e de privacidade.
+
+**Correção aplicada:**
+- Substituição por mock local com 26 veículos realistas
+- Documentação do motivo em `fipe.service.LEGACY.ts`
+- Criação de `PLACAS_MOCK_CONSULTA.md` com lista de placas para teste
+
+**Lição:** Sempre validar se APIs externas realmente existem e funcionam antes de integrá-las.
+
+---
+
+## Melhorias Futuras
+
+- [ ] Autenticação de usuários (login/logout com roles admin/operador)
+- [ ] Cadastro de mensalistas com tarifa fixa mensal
+- [ ] Exportação de relatórios em PDF/CSV
+- [ ] Integração com API de pagamento real (Stripe, PagSeguro)
+- [ ] QR Code no ticket de entrada para checkout rápido
+- [ ] Notificações push para alertas de tempo limite
+- [ ] Tema escuro (dark mode)
+- [ ] Integração com API de placas paga (ApiPlacas, Olho no Carro)
+- [ ] Multi-unidade (gerenciar vários estacionamentos)
+- [ ] App mobile (React Native)
+
+---
+
+## Vídeo de Demonstração
+
+📹 [Link do vídeo no YouTube](https://youtube.com/watch?v=SEU_VIDEO_AQUI)
+
+> ⚠️ Substituir pelo link real após gravação
+
+---
 
 ## Tecnologias
 
@@ -31,40 +244,7 @@ Sistema de gerenciamento de estacionamento e lavagem de veículos.
 | Banco de Dados | Supabase (PostgreSQL) |
 | Testes | Jest + fast-check (property-based) |
 | CI/CD | GitHub Actions |
-
-## Como Executar
-
-### Pré-requisitos
-- Node.js 20+
-- npm
-
-### 1. Instalar dependências
-
-```bash
-cd parking-wash/backend && npm install
-cd ../frontend && npm install
-```
-
-### 2. Configurar variáveis de ambiente
-
-```bash
-cp backend/.env.example backend/.env
-# Editar backend/.env com suas credenciais do Supabase
-```
-
-### 3. Iniciar o projeto
-
-```bash
-# Terminal 1 - Backend
-cd parking-wash/backend
-npm run dev
-# Rodando em http://localhost:3333
-
-# Terminal 2 - Frontend
-cd parking-wash/frontend
-npm run dev
-# Rodando em http://localhost:5173
-```
+| IA | Kiro IDE |
 
 ## Estrutura do Projeto
 
@@ -91,49 +271,10 @@ parking-wash/
 │   │   ├── hooks/           # Hooks customizados
 │   │   ├── types/           # Interfaces TypeScript
 │   │   └── utils/           # Utilitários (pricing, formatação)
-│   └── public/
+├── docs/
+│   └── prompts/             # Prompts utilizados por etapa
 └── .github/workflows/       # CI/CD pipeline
 ```
-
-## API Endpoints
-
-### Estacionamento
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/api/parking/checkin` | Check-in de veículo |
-| POST | `/api/parking/:id/checkout` | Checkout com pagamento |
-| GET | `/api/parking` | Listar veículos (filtro por status) |
-| GET | `/api/parking/history` | Histórico de checkouts |
-| GET | `/api/parking/dashboard` | Métricas do dia |
-| GET | `/api/parking/fipe/:placa` | Consulta dados do veículo |
-
-### Lavagem
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/api/wash-orders` | Criar ordem de lavagem |
-| PATCH | `/api/wash-orders/:id/status` | Avançar status |
-| GET | `/api/wash-orders` | Listar ordens |
-| GET | `/api/wash-orders/history` | Histórico de lavagens |
-| GET | `/api/wash-orders/dashboard` | Métricas de lavagem |
-
-### Configurações
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/vehicle-types` | Listar tipos de veículo |
-| PATCH | `/api/vehicle-types/:id` | Atualizar tarifas |
-| GET | `/api/wash-services` | Listar serviços de lavagem |
-| PATCH | `/api/wash-services/:id` | Atualizar preço |
-| GET | `/api/settings` | Configurações gerais |
-| PATCH | `/api/settings` | Atualizar configurações |
-
-## Regras de Precificação
-
-- **1ª hora:** Valor fixo (ex: R$ 10 para Carro)
-- **Frações adicionais:** R$ 5 por cada 30 min
-- **Diária:** Aplica automaticamente quando valor horário atinge o teto (ex: R$ 60)
-- **Excedente 24h:** Inicia nova cobrança
-
-Ver detalhes em `PRICING_IMPLEMENTATION_RULES.md`.
 
 ## Testes
 
