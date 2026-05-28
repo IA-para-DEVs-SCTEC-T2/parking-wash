@@ -369,6 +369,7 @@ describe('ParkingService', () => {
         status: 'Parked',
       };
 
+      // For 90 min with new rules: 1st hour R$10 + 1 fraction (30min) R$5 = R$15
       mockSupabase.from = jest.fn().mockReturnThis();
       mockSupabase.select = jest.fn().mockReturnThis();
       mockSupabase.eq = jest.fn().mockReturnThis();
@@ -382,7 +383,10 @@ describe('ParkingService', () => {
             status: 'Exited',
             exit_time: new Date().toISOString(),
             duration_minutes: 90,
-            total_amount: 20.0, // 2 hours * 10.00
+            total_amount: 15.0,
+            applied_daily_rate: false,
+            payment_status: 'Pending',
+            payment_method_id: null,
           },
           error: null,
         });
@@ -390,8 +394,8 @@ describe('ParkingService', () => {
       const result = await parkingService.checkOut('test-id-123');
 
       expect(result.status).toBe('Exited');
-      expect(result.duration_minutes).toBe(90);
-      expect(result.total_amount).toBe(20.0);
+      expect(result.durationMinutes).toBe(90);
+      expect(result.totalAmount).toBe(15.0);
     });
 
     it('should throw ServiceUnavailableError when database update fails', async () => {
@@ -442,7 +446,11 @@ describe('ParkingService', () => {
       const result = await parkingService.listRecords();
 
       expect(result).toHaveLength(2);
-      expect(result).toEqual(records);
+      // Service transforms snake_case to camelCase
+      expect(result[0].licensePlate).toBe('ABC-1234');
+      expect(result[0].status).toBe('Parked');
+      expect(result[1].licensePlate).toBe('DEF-5678');
+      expect(result[1].status).toBe('Exited');
     });
 
     it('should throw ServiceUnavailableError when database query fails', async () => {

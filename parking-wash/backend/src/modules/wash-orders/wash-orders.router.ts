@@ -32,6 +32,15 @@ router.patch(
 );
 
 /**
+ * GET /api/wash-orders/dashboard
+ * Get wash dashboard metrics for today
+ */
+router.get(
+  '/dashboard',
+  (req, res, next) => controller.getWashDashboard(req, res, next)
+);
+
+/**
  * GET /api/wash-orders/history
  * List completed wash orders history (all dates, for audit)
  * Query: limit? (default 50)

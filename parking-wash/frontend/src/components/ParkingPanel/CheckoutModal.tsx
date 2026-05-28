@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { checkOut } from '../../api/parking'
-import { ParkingRecord } from '../../types/parking'
+import { getVehicleTypes } from '../../api/vehicleTypes'
+import { ParkingRecord, VehicleType } from '../../types/parking'
 import { calculatePricing, type PricingCalculation } from '../../utils/pricing'
 import PricingCalculationComponent from './PricingCalculation'
 import CheckoutReceipt from './CheckoutReceipt'
@@ -37,6 +38,21 @@ export default function CheckoutModal({ record, onClose, onSuccess, onToast }: C
   const [duration, setDuration] = useState<string>('')
   const [pricing, setPricing] = useState<PricingCalculation | null>(null)
   const [receipt, setReceipt] = useState<ReceiptInfo | null>(null)
+  const [vehicleType, setVehicleType] = useState<VehicleType | null>(null)
+
+  // Load vehicle type rates for this record
+  useEffect(() => {
+    if (!record?.vehicleTypeId) {
+      setVehicleType(null)
+      return
+    }
+    getVehicleTypes()
+      .then(types => {
+        const vt = types.find(t => t.id === record.vehicleTypeId)
+        setVehicleType(vt || null)
+      })
+      .catch(() => setVehicleType(null))
+  }, [record?.vehicleTypeId])
 
   // Update duration and pricing every second
   useEffect(() => {
@@ -53,15 +69,17 @@ export default function CheckoutModal({ record, onClose, onSuccess, onToast }: C
 
       setDuration(`${hours}h ${minutes}m ${seconds}s`)
 
-      // Calculate pricing with new rules
-      const calculation = calculatePricing(record.entryTime)
+      // Calculate pricing using vehicle type rates (or defaults)
+      const hourlyRate = vehicleType?.hourlyRate ?? 10
+      const dailyRate = vehicleType?.dailyRate ?? 60
+      const calculation = calculatePricing(record.entryTime, hourlyRate, dailyRate)
       setPricing(calculation)
     }
 
     updateDuration()
     const interval = setInterval(updateDuration, 1000)
     return () => clearInterval(interval)
-  }, [record])
+  }, [record, vehicleType])
 
   if (!record || !pricing) return null
 

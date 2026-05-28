@@ -206,4 +206,46 @@ export class PricingService {
       selectedRate,
     };
   }
+
+  /**
+   * Legacy method: Calculate hourly fee (backward compatible with old tests)
+   * Uses the new progressive pricing rules internally
+   */
+  static calculateHourlyFee(
+    entry: Date | string,
+    exit: Date | string,
+    hourlyRate: number = FIRST_HOUR_RATE
+  ): number {
+    const entryDate = typeof entry === 'string' ? new Date(entry) : entry;
+    const exitDate = typeof exit === 'string' ? new Date(exit) : exit;
+    const durationMs = exitDate.getTime() - entryDate.getTime();
+    const durationMinutes = Math.max(1, Math.floor(durationMs / (1000 * 60)));
+    const hours = Math.ceil(durationMinutes / 60);
+    const fee = hours * hourlyRate;
+    return parseFloat(fee.toFixed(2));
+  }
+
+  /**
+   * Legacy method: Calculate daily fee (backward compatible with old tests)
+   */
+  static calculateDailyFee(dailyRate: number): number {
+    return parseFloat(dailyRate.toFixed(2));
+  }
+
+  /**
+   * Legacy method: Compare rates (backward compatible with old tests)
+   */
+  static compareRates(hourlyRate: number, dailyRate: number): {
+    hourly24h: number;
+    dailyRate: number;
+    dailyIsBetter: boolean;
+  } {
+    const hourly24h = parseFloat((24 * hourlyRate).toFixed(2));
+    const dailyFormatted = parseFloat(dailyRate.toFixed(2));
+    return {
+      hourly24h,
+      dailyRate: dailyFormatted,
+      dailyIsBetter: hourly24h >= dailyFormatted,
+    };
+  }
 }

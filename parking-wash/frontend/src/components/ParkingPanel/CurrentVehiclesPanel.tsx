@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { listParking, getFipeData } from '../../api/parking'
-import { ParkingRecord } from '../../types/parking'
+import { getVehicleTypes } from '../../api/vehicleTypes'
+import { ParkingRecord, VehicleType } from '../../types/parking'
 import './CurrentVehiclesPanel.css'
 
-interface VehicleWithFipe extends ParkingRecord {
+interface VehicleWithInfo extends ParkingRecord {
   fipeData?: {
     brand: string
     model: string
@@ -12,11 +13,13 @@ interface VehicleWithFipe extends ParkingRecord {
     fipeValue: number
     vehicleType: string
   }
+  vehicleTypeName?: string
   duration?: string
 }
 
 export default function CurrentVehiclesPanel() {
-  const [vehicles, setVehicles] = useState<VehicleWithFipe[]>([])
+  const [vehicles, setVehicles] = useState<VehicleWithInfo[]>([])
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -40,29 +43,43 @@ export default function CurrentVehiclesPanel() {
     setError('')
 
     try {
-      const data = await listParking('Parked')
-      
-      // Buscar dados do Fipe para cada veículo
-      const vehiclesWithFipe = await Promise.all(
-        data.map(async (vehicle) => {
-          try {
-            const fipeData = await getFipeData(vehicle.licensePlate)
-            return {
-              ...vehicle,
-              fipeData,
-              duration: calculateDuration(vehicle.entryTime),
+      const [data, types] = await Promise.all([
+        listParking('Parked'),
+        vehicleTypes.length === 0 ? getVehicleTypes() : Promise.resolve(vehicleTypes),
+      ])
+
+      if (types !== vehicleTypes) setVehicleTypes(types)
+
+      // Map vehicle type names from the types list (no FIPE call needed)
+      const vehiclesWithInfo: VehicleWithInfo[] = data.map(vehicle => {
+        const vType = vehicle.vehicleTypeId
+          ? types.find(t => t.id === vehicle.vehicleTypeId)
+          : undefined
+        return {
+          ...vehicle,
+          vehicleTypeName: vType?.name || 'Não informado',
+          duration: calculateDuration(vehicle.entryTime),
+        }
+      })
+
+      // Fetch FIPE data only for the first load (background, non-blocking)
+      if (vehicles.length === 0) {
+        setVehicles(vehiclesWithInfo)
+        // Load FIPE in background
+        Promise.all(
+          vehiclesWithInfo.map(async (v) => {
+            try {
+              const fipeData = await getFipeData(v.licensePlate)
+              return { ...v, fipeData }
+            } catch {
+              return v
             }
-          } catch (err) {
-            console.error(`Erro ao buscar Fipe para ${vehicle.licensePlate}:`, err)
-            return {
-              ...vehicle,
-              duration: calculateDuration(vehicle.entryTime),
-            }
-          }
-        })
-      )
-      
-      setVehicles(vehiclesWithFipe)
+          })
+        ).then(setVehicles)
+      } else {
+        // On refresh, just update durations and new vehicles
+        setVehicles(vehiclesWithInfo)
+      }
     } catch (err: unknown) {
       let errorMsg = 'Erro ao carregar veículos'
       
@@ -132,6 +149,10 @@ export default function CurrentVehiclesPanel() {
                 {vehicle.fipeData && (
                   <div className="fipe-info">
                     <div className="fipe-row">
+                      <span className="label">Tipo:</span>
+                      <span className="value">{vehicle.vehicleTypeName}</span>
+                    </div>
+                    <div className="fipe-row">
                       <span className="label">Marca:</span>
                       <span className="value">{vehicle.fipeData.brand}</span>
                     </div>
@@ -147,10 +168,6 @@ export default function CurrentVehiclesPanel() {
                       <span className="label">Combustível:</span>
                       <span className="value">{vehicle.fipeData.fuel}</span>
                     </div>
-                    <div className="fipe-row">
-                      <span className="label">Tipo:</span>
-                      <span className="value">{vehicle.fipeData.vehicleType}</span>
-                    </div>
                     <div className="fipe-row highlight">
                       <span className="label">Valor FIPE:</span>
                       <span className="value">
@@ -161,8 +178,11 @@ export default function CurrentVehiclesPanel() {
                 )}
 
                 {!vehicle.fipeData && (
-                  <div className="no-fipe-info">
-                    <p>Dados do veículo não disponíveis</p>
+                  <div className="fipe-info">
+                    <div className="fipe-row">
+                      <span className="label">Tipo:</span>
+                      <span className="value">{vehicle.vehicleTypeName}</span>
+                    </div>
                   </div>
                 )}
               </div>

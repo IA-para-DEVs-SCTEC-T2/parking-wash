@@ -357,12 +357,30 @@ export class ParkingService {
         ? Math.round(records.reduce((sum: number, r: any) => sum + (r.duration_minutes || 0), 0) / records.length)
         : 0;
 
+      // Get recent checkouts (last 5)
+      const { data: recentExited } = await supabase
+        .from('parking_records')
+        .select('id, license_plate, total_amount, duration_minutes, exit_time, vehicle_type_id')
+        .eq('status', 'Exited')
+        .gte('exit_time', todayISO)
+        .order('exit_time', { ascending: false })
+        .limit(5);
+
+      const recentCheckouts = (recentExited || []).map((r: any) => ({
+        id: r.id,
+        licensePlate: r.license_plate,
+        totalAmount: r.total_amount || 0,
+        durationMinutes: r.duration_minutes || 0,
+        exitTime: r.exit_time,
+      }));
+
       return {
         revenueToday: Number(revenueToday.toFixed(2)),
         checkoutsToday,
         entriesTotal: (todayEntries || []).length,
         currentOccupancy: (parked || []).length,
         avgDurationMinutes: avgDuration,
+        recentCheckouts,
       };
     } catch (error) {
       if (error instanceof ServiceUnavailableError) {
@@ -375,18 +393,20 @@ export class ParkingService {
   }
 
   /**
-   * Get parking history (last 10 exited records)
-   * @returns Array of parking records with status = 'Exited', limited to 10
+   * Get parking history with pagination
+   * @param limit - Number of records to return (default 20)
+   * @param offset - Number of records to skip (default 0)
+   * @returns Array of parking records with status = 'Exited'
    * @throws ServiceUnavailableError if database operation fails
    */
-  async getHistory(): Promise<ParkingRecord[]> {
+  async getHistory(limit: number = 20, offset: number = 0): Promise<ParkingRecord[]> {
     try {
       const { data: records, error } = await supabase
         .from('parking_records')
         .select('*')
         .eq('status', 'Exited')
         .order('exit_time', { ascending: false })
-        .limit(10);
+        .range(offset, offset + limit - 1);
 
       if (error) {
         throw new ServiceUnavailableError(

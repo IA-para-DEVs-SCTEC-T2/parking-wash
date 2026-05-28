@@ -6,7 +6,92 @@ import {
 } from '../../middleware/errors';
 import { WashOrder, WashOrderResponse, WashOrderStatus } from './wash-orders.types';
 
+export interface WashDashboardMetrics {
+  totalOrders: number;
+  completedToday: number;
+  inProgress: number;
+  waiting: number;
+  revenueToday: number;
+  recentCompleted: Array<{
+    id: string;
+    licensePlate: string;
+    serviceName: string;
+    price: number;
+    completedAt: string;
+  }>;
+}
+
 export class WashOrderService {
+  /**
+   * Get dashboard metrics for wash orders (today)
+   */
+  async getDashboardMetrics(): Promise<WashDashboardMetrics> {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+
+      // Get all orders created today
+      const { data: todayOrders, error: todayError } = await supabase
+        .from('wash_orders')
+        .select('id, status, license_plate, wash_service_id, completed_at, created_at')
+        .gte('created_at', todayISO);
+
+      if (todayError) {
+        throw new ServiceUnavailableError('Serviço temporariamente indisponível');
+      }
+
+      const orders = todayOrders || [];
+      const completedToday = orders.filter(o => o.status === 'Completed');
+      const inProgress = orders.filter(o => o.status === 'InProgress');
+      const waiting = orders.filter(o => o.status === 'Waiting');
+
+      // Get service prices for revenue calculation
+      const serviceIds = [...new Set(completedToday.map(o => o.wash_service_id))];
+      let servicesMap: Record<string, { name: string; price: number }> = {};
+
+      if (serviceIds.length > 0) {
+        const { data: services } = await supabase
+          .from('wash_services')
+          .select('id, name, price')
+          .in('id', serviceIds);
+
+        for (const s of services || []) {
+          servicesMap[s.id] = { name: s.name, price: s.price };
+        }
+      }
+
+      const revenueToday = completedToday.reduce((sum, o) => {
+        const service = servicesMap[o.wash_service_id];
+        return sum + (service?.price || 0);
+      }, 0);
+
+      // Recent completed (last 5)
+      const recentCompleted = completedToday
+        .sort((a, b) => new Date(b.completed_at || '').getTime() - new Date(a.completed_at || '').getTime())
+        .slice(0, 5)
+        .map(o => ({
+          id: o.id,
+          licensePlate: o.license_plate,
+          serviceName: servicesMap[o.wash_service_id]?.name || 'Serviço',
+          price: servicesMap[o.wash_service_id]?.price || 0,
+          completedAt: o.completed_at || o.created_at,
+        }));
+
+      return {
+        totalOrders: orders.length,
+        completedToday: completedToday.length,
+        inProgress: inProgress.length,
+        waiting: waiting.length,
+        revenueToday: parseFloat(revenueToday.toFixed(2)),
+        recentCompleted,
+      };
+    } catch (error) {
+      if (error instanceof ServiceUnavailableError) throw error;
+      throw new ServiceUnavailableError('Serviço temporariamente indisponível');
+    }
+  }
+
   /**
    * Creates a new wash order for a vehicle
    * @param licensePlate - Vehicle license plate (validated format)
@@ -284,7 +369,7 @@ export class WashOrderService {
    * Returns last 50 completed orders ordered by completed_at DESC
    * Used for the history/audit view
    */
-  async listHistory(limit: number = 50): Promise<WashOrderResponse[]> {
+  async listHistory(limit: number = 20, offset: number = 0): Promise<WashOrderResponse[]> {
     try {
       const { data: orders, error } = await supabase
         .from('wash_orders')
@@ -297,7 +382,7 @@ export class WashOrderService {
         )
         .eq('status', 'Completed')
         .order('completed_at', { ascending: false })
-        .limit(limit);
+        .range(offset, offset + limit - 1);
 
       if (error) {
         throw new ServiceUnavailableError(

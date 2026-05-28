@@ -176,7 +176,9 @@ export class ParkingController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const result = await this.service.getHistory();
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const result = await this.service.getHistory(limit, offset);
       res.status(200).json(result);
     } catch (error) {
       next(error);

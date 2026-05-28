@@ -72,6 +72,23 @@ export class WashOrdersController {
   }
 
   /**
+   * GET /api/wash-orders/dashboard
+   * Get wash orders dashboard metrics for today
+   */
+  async getWashDashboard(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const metrics = await this.service.getDashboardMetrics();
+      res.status(200).json(metrics);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * GET /api/wash-orders/history
    * Lists completed wash orders history (all dates, last 50)
    * Used for audit/consultation of past services
@@ -79,13 +96,14 @@ export class WashOrdersController {
    * @returns HTTP 200 with array of WashOrderResponse
    */
   async getWashOrdersHistory(
-    req: Request<{}, {}, {}, { limit?: string }>,
+    req: Request<{}, {}, {}, { limit?: string; offset?: string }>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit, 10) : 50;
-      const orders = await this.service.listHistory(limit);
+      const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+      const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+      const orders = await this.service.listHistory(limit, offset);
       res.status(200).json(orders);
     } catch (error) {
       next(error);

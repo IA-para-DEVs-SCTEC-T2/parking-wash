@@ -17,8 +17,8 @@ export async function listParking(status?: string): Promise<ParkingRecord[]> {
   return apiGet<ParkingRecord[]>(url)
 }
 
-export async function getHistory(): Promise<ParkingRecord[]> {
-  return apiGet<ParkingRecord[]>('/api/parking/history')
+export async function getHistory(limit: number = 20, offset: number = 0): Promise<ParkingRecord[]> {
+  return apiGet<ParkingRecord[]>(`/api/parking/history?limit=${limit}&offset=${offset}`)
 }
 
 export interface DashboardMetrics {
@@ -27,6 +27,13 @@ export interface DashboardMetrics {
   entriesTotal: number
   currentOccupancy: number
   avgDurationMinutes: number
+  recentCheckouts: Array<{
+    id: string
+    licensePlate: string
+    totalAmount: number
+    durationMinutes: number
+    exitTime: string
+  }>
 }
 
 export async function getDashboard(): Promise<DashboardMetrics> {

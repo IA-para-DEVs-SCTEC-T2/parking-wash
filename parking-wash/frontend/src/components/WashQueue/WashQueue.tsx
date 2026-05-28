@@ -16,6 +16,9 @@ export function WashQueue(): JSX.Element {
   const [showHistory, setShowHistory] = useState(false)
   const [searchPlate, setSearchPlate] = useState('')
   const [washSpots, setWashSpots] = useState(5)
+  const [historyOffset, setHistoryOffset] = useState(0)
+  const [hasMoreHistory, setHasMoreHistory] = useState(true)
+  const PAGE_SIZE = 20
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
@@ -43,14 +46,22 @@ export function WashQueue(): JSX.Element {
     }
   }, [])
 
-  const fetchHistory = useCallback(async () => {
+  const fetchHistory = useCallback(async (reset: boolean = true) => {
     try {
-      const data = await listWashOrdersHistory(50)
-      setHistoryOrders(data)
+      const offset = reset ? 0 : historyOffset
+      const data = await listWashOrdersHistory(PAGE_SIZE, offset)
+      if (reset) {
+        setHistoryOrders(data)
+        setHistoryOffset(PAGE_SIZE)
+      } else {
+        setHistoryOrders(prev => [...prev, ...data])
+        setHistoryOffset(prev => prev + PAGE_SIZE)
+      }
+      setHasMoreHistory(data.length === PAGE_SIZE)
     } catch (err) {
       console.error('Erro ao carregar histórico:', err)
     }
-  }, [])
+  }, [historyOffset])
 
   // Auto-refresh every 30 seconds
   useAutoRefresh(fetchOrders, 30000)
@@ -65,7 +76,7 @@ export function WashQueue(): JSX.Element {
 
   const handleToggleHistory = () => {
     if (!showHistory) {
-      fetchHistory()
+      fetchHistory(true)
     }
     setShowHistory(!showHistory)
   }
@@ -190,6 +201,12 @@ export function WashQueue(): JSX.Element {
                     ))}
                   </tbody>
                 </table>
+
+                {hasMoreHistory && !searchPlate && (
+                  <button className="load-more-btn" onClick={() => fetchHistory(false)}>
+                    Carregar mais
+                  </button>
+                )}
               </>
             );
           })()}

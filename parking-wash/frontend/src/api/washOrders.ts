@@ -34,6 +34,25 @@ export async function listWashOrders(status?: WashOrderStatus): Promise<WashOrde
   return apiGet<WashOrder[]>(url)
 }
 
-export async function listWashOrdersHistory(limit: number = 50): Promise<WashOrder[]> {
-  return apiGet<WashOrder[]>(`/api/wash-orders/history?limit=${limit}`)
+export async function listWashOrdersHistory(limit: number = 20, offset: number = 0): Promise<WashOrder[]> {
+  return apiGet<WashOrder[]>(`/api/wash-orders/history?limit=${limit}&offset=${offset}`)
+}
+
+export interface WashDashboardMetrics {
+  totalOrders: number
+  completedToday: number
+  inProgress: number
+  waiting: number
+  revenueToday: number
+  recentCompleted: Array<{
+    id: string
+    licensePlate: string
+    serviceName: string
+    price: number
+    completedAt: string
+  }>
+}
+
+export async function getWashDashboard(): Promise<WashDashboardMetrics> {
+  return apiGet<WashDashboardMetrics>('/api/wash-orders/dashboard')
 }
