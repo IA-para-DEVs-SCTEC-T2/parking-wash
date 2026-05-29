@@ -23,6 +23,7 @@ const PAYMENT_METHODS = [
 
 interface ReceiptInfo {
   licensePlate: string
+  vehicleTypeName: string
   entryTime: string
   exitTime: string
   durationMinutes: number
@@ -112,6 +113,7 @@ export default function CheckoutModal({ record, onClose, onSuccess, onToast }: C
       // Show receipt
       setReceipt({
         licensePlate: record.licensePlate,
+        vehicleTypeName: vehicleType?.name || 'Não informado',
         entryTime: record.entryTime,
         exitTime: result.exitTime || new Date().toISOString(),
         durationMinutes: result.durationMinutes || 0,
@@ -150,6 +152,10 @@ export default function CheckoutModal({ record, onClose, onSuccess, onToast }: C
             <span className="value">{record.licensePlate}</span>
           </div>
           <div className="info-row">
+            <span className="label">Tipo:</span>
+            <span className="value">{vehicleType?.name || 'Não informado'}</span>
+          </div>
+          <div className="info-row">
             <span className="label">Entrada:</span>
             <span className="value">{entryTime.toLocaleString('pt-BR')}</span>
           </div>
@@ -157,6 +163,12 @@ export default function CheckoutModal({ record, onClose, onSuccess, onToast }: C
             <span className="label">Duração:</span>
             <span className="value">{duration}</span>
           </div>
+          {vehicleType && (
+            <div className="info-row tariff-row">
+              <span className="label">Tarifa:</span>
+              <span className="value">1ª hora R$ {vehicleType.hourlyRate.toFixed(2)} | Diária R$ {vehicleType.dailyRate.toFixed(2)}</span>
+            </div>
+          )}
         </div>
 
         {/* Pricing Calculation - automatic rules */}

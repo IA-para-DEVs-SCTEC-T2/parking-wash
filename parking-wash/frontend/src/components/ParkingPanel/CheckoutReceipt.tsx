@@ -3,6 +3,7 @@ import './CheckoutReceipt.css'
 
 interface ReceiptData {
   licensePlate: string
+  vehicleTypeName?: string
   entryTime: string
   exitTime: string
   durationMinutes: number
@@ -77,6 +78,13 @@ export default function CheckoutReceipt({ data, onClose }: CheckoutReceiptProps)
             <span className="receipt-label">Placa</span>
             <span className="receipt-value plate">{data.licensePlate}</span>
           </div>
+
+          {data.vehicleTypeName && (
+            <div className="receipt-row">
+              <span className="receipt-label">Tipo</span>
+              <span className="receipt-value">{data.vehicleTypeName}</span>
+            </div>
+          )}
 
           <div className="receipt-row">
             <span className="receipt-label">Entrada</span>

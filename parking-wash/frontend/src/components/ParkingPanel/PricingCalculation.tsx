@@ -34,10 +34,10 @@ export default function PricingCalculationComponent({
         {calculation.dailyCharge > 0 && (
           <div className="breakdown-row">
             <span className="breakdown-label">
-              📅 {calculation.fullDays > 0
-                ? `${calculation.fullDays} diária${calculation.fullDays > 1 ? 's' : ''}`
-                : 'Diária'
-              }
+              📅 {(() => {
+                const numDiarias = Math.round(calculation.dailyCharge / calculation.dailyRate) || 1
+                return `${numDiarias} diária${numDiarias > 1 ? 's' : ''}`
+              })()}
             </span>
             <span className="breakdown-value">{formatBRL(calculation.dailyCharge)}</span>
           </div>
@@ -46,7 +46,7 @@ export default function PricingCalculationComponent({
         {calculation.hourlyCharge > 0 && (
           <div className="breakdown-row">
             <span className="breakdown-label">
-              ⏱️ Frações: {formatBRL(calculation.hourlyCharge)}
+              ⏱️ Frações
             </span>
             <span className="breakdown-value">{formatBRL(calculation.hourlyCharge)}</span>
           </div>
