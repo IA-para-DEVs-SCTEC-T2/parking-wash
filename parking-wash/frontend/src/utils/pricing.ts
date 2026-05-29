@@ -2,23 +2,15 @@
  * Pricing calculation utilities for parking
  *
  * REGRAS DE NEGÓCIO:
- * 1. Primeira hora: R$ 10,00 (valor fixo, qualquer fração até 60 min)
- * 2. Frações adicionais: R$ 5,00 por cada 30 minutos (ou fração)
- *    - 1h01 a 1h30 = R$ 15,00
- *    - 1h31 a 2h00 = R$ 20,00
- * 3. Diária: R$ 60,00 — aplica automaticamente quando cálculo horário >= R$ 60
+ * 1. Primeira hora: valor configurável por tipo de veículo
+ * 2. Frações adicionais: 50% do valor da 1ª hora, por cada 30 min
+ * 3. Diária: valor configurável (teto automático)
  * 4. Excedente após 24h: inicia nova cobrança
  *
- * Exemplos:
- *   - 45 min → R$ 10,00
- *   - 1h20 → R$ 15,00
- *   - 3h → R$ 30,00
- *   - 6h+ → R$ 60,00 (diária)
- *   - 25h → R$ 70,00 (1 diária + 1h excedente)
+ * Todos os valores vêm das configurações do usuário (Dashboard > Configurações).
  */
 
 const FIRST_HOUR_RATE = 10.00
-const FRACTION_RATE = 5.00
 const FRACTION_MINUTES = 30
 const DAILY_RATE_DEFAULT = 60.00
 const MINUTES_PER_DAY = 1440
@@ -45,7 +37,6 @@ export interface PricingCalculation {
 function calculatePeriodFee(
   minutes: number,
   firstHourRate: number,
-  fractionRate: number,
   dailyRate: number
 ): { fee: number; isDailyApplied: boolean; description: string } {
   if (minutes <= 0) {
@@ -61,7 +52,8 @@ function calculatePeriodFee(
     }
   }
 
-  // Beyond first hour: fractions of 30 min
+  // Beyond first hour: fractions of 30 min = 50% of firstHourRate
+  const fractionRate = firstHourRate * 0.5
   const additionalMinutes = minutes - 60
   const additionalFractions = Math.ceil(additionalMinutes / FRACTION_MINUTES)
   const hourlyTotal = firstHourRate + (additionalFractions * fractionRate)
@@ -75,14 +67,10 @@ function calculatePeriodFee(
     }
   }
 
-  const totalMinutes = 60 + (additionalFractions * FRACTION_MINUTES)
-  const displayHours = Math.floor(totalMinutes / 60)
-  const displayMins = totalMinutes % 60
-
   return {
-    fee: hourlyTotal,
+    fee: parseFloat(hourlyTotal.toFixed(2)),
     isDailyApplied: false,
-    description: `1ª hora + ${additionalFractions}×30min = ${displayHours}h${displayMins > 0 ? displayMins + 'min' : ''} cobradas`,
+    description: `1ª hora + ${additionalFractions}×30min (R$ ${fractionRate.toFixed(2)}/fração)`,
   }
 }
 
@@ -118,7 +106,7 @@ export function calculatePricing(
 
   // Remaining period after full days
   if (remainingMinutes > 0) {
-    const periodResult = calculatePeriodFee(remainingMinutes, hourlyRate, FRACTION_RATE, dailyRate)
+    const periodResult = calculatePeriodFee(remainingMinutes, hourlyRate, dailyRate)
 
     if (periodResult.isDailyApplied) {
       dailyCharge += periodResult.fee

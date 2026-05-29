@@ -1,28 +1,17 @@
 /**
  * Pricing service for parking fee calculations
  *
- * REGRAS DE NEGÓCIO (atualizadas):
+ * REGRAS DE NEGÓCIO:
  *
- * 1. Primeira hora: R$ 10,00 (valor fixo, qualquer fração até 60 min)
- * 2. Frações adicionais: R$ 5,00 por cada 30 minutos (ou fração de 30 min)
- *    - 1h01 a 1h30 = R$ 15,00 (10 + 5)
- *    - 1h31 a 2h00 = R$ 20,00 (10 + 5 + 5)
- *    - 2h01 a 2h30 = R$ 25,00 (10 + 5 + 5 + 5)
- * 3. Diária: R$ 60,00 — aplica automaticamente quando o cálculo horário >= R$ 60
- *    (ou seja, a partir de ~6h o valor horário atinge R$ 60, então cobra diária)
- * 4. Excedente após 24h: inicia nova cobrança (nova diária ou frações)
+ * 1. Primeira hora: valor configurável por tipo de veículo (ex: R$ 15 para Carro)
+ * 2. Frações adicionais: 50% do valor da 1ª hora, por cada 30 minutos (ou fração)
+ *    - Ex (Carro R$15): 1h30 = R$15 + R$7,50 = R$22,50
+ *    - Ex (Carro R$15): 2h00 = R$15 + R$7,50 + R$7,50 = R$30,00
+ * 3. Diária: valor configurável (teto automático quando frações atingem esse valor)
+ * 4. Excedente após 24h: inicia nova cobrança
  *
- * Exemplos:
- *   - 45 min → R$ 10,00
- *   - 1h20 → R$ 15,00
- *   - 2h → R$ 20,00
- *   - 3h → R$ 30,00
- *   - 6h → R$ 60,00 (diária)
- *   - 8h → R$ 60,00 (diária, pois horário seria R$ 60+)
- *   - 24h → R$ 60,00 (1 diária)
- *   - 25h → R$ 70,00 (1 diária R$ 60 + 1h excedente R$ 10)
- *   - 26h30 → R$ 80,00 (1 diária R$ 60 + 1h R$ 10 + 30min R$ 5 + 30min R$ 5)
- *   - 48h → R$ 120,00 (2 diárias)
+ * Todos os valores são configuráveis pelo usuário via Dashboard > Configurações.
+ * A fração é sempre calculada como 50% da 1ª hora do tipo de veículo.
  */
 
 export interface RateSelection {
@@ -43,7 +32,6 @@ export interface PricingBreakdown {
 
 /** Default pricing constants */
 const FIRST_HOUR_RATE = 10.00;
-const FRACTION_RATE = 5.00;
 const FRACTION_MINUTES = 30;
 const DAILY_RATE = 60.00;
 const MINUTES_PER_DAY = 1440; // 24h
@@ -69,13 +57,12 @@ export class PricingService {
    * Calculate the fee for a period of minutes (within a single day, max 1440 min)
    * Uses the progressive pricing rules:
    * - First 60 min: firstHourRate
-   * - Each additional 30 min (or fraction): fractionRate
+   * - Each additional 30 min (or fraction): 50% of firstHourRate
    * - Cap at dailyRate
    */
   private static calculatePeriodFee(
     minutes: number,
     firstHourRate: number = FIRST_HOUR_RATE,
-    fractionRate: number = FRACTION_RATE,
     dailyRate: number = DAILY_RATE
   ): { fee: number; isDailyApplied: boolean; description: string } {
     if (minutes <= 0) {
@@ -92,6 +79,8 @@ export class PricingService {
     }
 
     // Beyond first hour: calculate additional fractions of 30 min
+    // Fraction rate = 50% of firstHourRate
+    const fractionRate = firstHourRate * 0.5;
     const additionalMinutes = minutes - 60;
     const additionalFractions = Math.ceil(additionalMinutes / FRACTION_MINUTES);
     const hourlyTotal = firstHourRate + (additionalFractions * fractionRate);
@@ -106,7 +95,7 @@ export class PricingService {
     }
 
     return {
-      fee: hourlyTotal,
+      fee: parseFloat(hourlyTotal.toFixed(2)),
       isDailyApplied: false,
       description: `1ª hora R$ ${firstHourRate.toFixed(2)} + ${additionalFractions}×30min R$ ${(additionalFractions * fractionRate).toFixed(2)}`,
     };
@@ -147,7 +136,7 @@ export class PricingService {
 
     // Remaining period after full days
     if (remainingMinutes > 0) {
-      const periodResult = this.calculatePeriodFee(remainingMinutes, hourlyRate, FRACTION_RATE, dailyRate);
+      const periodResult = this.calculatePeriodFee(remainingMinutes, hourlyRate, dailyRate);
 
       if (periodResult.isDailyApplied) {
         dailyCharge += periodResult.fee;

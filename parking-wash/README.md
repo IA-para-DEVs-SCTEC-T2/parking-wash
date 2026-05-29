@@ -161,7 +161,7 @@ POST /api/parking/uuid-do-registro/checkout
   "paymentStatus": "Completed"
 }
 ```
-> Cálculo: 1ª hora R$10 + 1 fração de 30min R$5 = R$15
+> Cálculo: 1ª hora R$15 + 1 fração de 30min (50% = R$7,50) = R$22,50
 
 ### Cenário 2: Fila de Lavagem
 
@@ -244,7 +244,7 @@ PATCH /api/wash-orders/uuid-ordem/status
 | Banco de Dados | Supabase (PostgreSQL) |
 | Testes | Jest + fast-check (property-based) |
 | CI/CD | GitHub Actions |
-| IA | Kiro IDE |
+| IA | Kiro IDE | 
 
 ## Estrutura do Projeto
 

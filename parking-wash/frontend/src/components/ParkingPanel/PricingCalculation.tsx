@@ -57,7 +57,7 @@ export default function PricingCalculationComponent({
       <div className="pricing-note">
         <span className="note-icon">ℹ️</span>
         <span className="note-text">
-          {calculation.rateType === 'hourly' && `1ª hora R$ 10 + R$ 5 por fração de 30min`}
+          {calculation.rateType === 'hourly' && `1ª hora + frações de 30min (50% da tarifa horária)`}
           {calculation.rateType === 'daily' && `Diária aplicada (valor horário atingiu o teto)`}
           {calculation.rateType === 'mixed' && `Diárias completas + frações excedentes`}
         </span>
