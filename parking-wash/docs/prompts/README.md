@@ -42,9 +42,9 @@ Este diretório documenta os prompts e interações com IA utilizados durante o 
 - **Resultado:** Sistema funciona 100% sem dependência externa
 
 ### Caso 2: Regras de precificação incorretas
-- **Problema:** Cálculo cobrava por hora cheia (R$10/h × horas)
-- **Refinamento:** Implementação de regra progressiva (1ª hora + frações de 30min + teto diário)
-- **Resultado:** Cálculo mais justo e realista
+- **Problema:** Cálculo usava fração fixa de R$ 5 para todos os tipos de veículo
+- **Refinamento:** Implementação de fração proporcional (50% da tarifa horária de cada tipo)
+- **Resultado:** Cálculo proporcional — cada tipo tem sua fração baseada na 1ª hora configurada
 
 ### Caso 3: Checkout falhando com gateway
 - **Problema:** PaymentService tentava conectar a gateway inexistente
