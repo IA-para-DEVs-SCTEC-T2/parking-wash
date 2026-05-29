@@ -320,18 +320,21 @@ export class WashOrderService {
       }
 
       // Apply date filter for active queue view (not history)
-      // For Waiting/InProgress: always show all (they're active)
-      // For Completed or no status filter: show only today unless showAll=true
+      // Completed orders: show only today (reset at midnight)
+      // Waiting/InProgress: always show all (they're active)
       if (!showAll && !date) {
-        // Default: filter completed orders to today only
-        if (status === 'Completed' || !status) {
-          const today = new Date().toISOString().split('T')[0];
-          const dayStart = `${today}T00:00:00.000Z`;
-          // For non-completed, show all; for completed, show today only
-          if (status === 'Completed') {
-            query = query.gte('completed_at', dayStart);
-          }
+        const today = new Date().toISOString().split('T')[0];
+        const dayStart = `${today}T00:00:00.000Z`;
+
+        if (status === 'Completed') {
+          // Explicit Completed filter: show only today
+          query = query.gte('completed_at', dayStart);
+        } else if (!status) {
+          // No status filter (all): exclude old completed, keep all Waiting/InProgress
+          // Use OR logic: status != Completed OR completed_at >= today
+          query = query.or(`status.neq.Completed,completed_at.gte.${dayStart}`);
         }
+        // If status is Waiting or InProgress, no date filter needed
       } else if (date) {
         // Specific date filter
         const dayStart = `${date}T00:00:00.000Z`;

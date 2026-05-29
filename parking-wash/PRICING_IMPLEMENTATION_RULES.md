@@ -122,6 +122,23 @@ A fração de 30 minutos **não é configurável diretamente** — é sempre 50%
 
 ---
 
+## Regra de Reset da Fila de Lavagem (Virada do Dia)
+
+A coluna "Concluídos" na fila de lavagem é **resetada automaticamente à meia-noite (00:00)**:
+
+- **O que acontece:** Ao virar o dia, a coluna "Concluídos" fica vazia
+- **Dados deletados?** NÃO — os registros permanecem no banco de dados
+- **Histórico:** Todos os registros continuam acessíveis via botão "📋 Histórico"
+- **Como funciona:** O backend filtra `completed_at >= hoje 00:00:00` para a fila ativa
+- **Colunas afetadas:** Apenas "Concluídos" — "Aguardando" e "Em Andamento" não são afetadas
+
+**Implementação técnica:**
+- Backend: `wash-orders.service.ts` → `listOrders()` aplica filtro `completed_at >= dayStart` quando status é "Completed" ou quando não há filtro de status
+- Frontend: Nenhuma alteração necessária — consome o endpoint normalmente
+- Histórico: Endpoint separado (`/api/wash-orders/history`) retorna todos os registros sem filtro de data
+
+---
+
 ## Histórico de Alterações
 
 | Data | Alteração |
@@ -129,3 +146,4 @@ A fração de 30 minutos **não é configurável diretamente** — é sempre 50%
 | 26/05/2026 | Regra inicial: R$ 10/hora fixa, threshold 6h para diária |
 | 27/05/2026 | Nova regra: 1ª hora + frações de 30min R$ 5 fixo + diária como teto |
 | 28/05/2026 | **Regra atual:** 1ª hora configurável + frações = 50% da 1ª hora + diária configurável |
+| 28/05/2026 | Reset automático da coluna "Concluídos" na fila de lavagem à meia-noite |
