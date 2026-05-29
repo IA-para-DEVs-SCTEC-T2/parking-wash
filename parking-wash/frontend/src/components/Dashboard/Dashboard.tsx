@@ -3,6 +3,7 @@ import { getDashboard, type DashboardMetrics } from '../../api/parking'
 import { getWashDashboard, type WashDashboardMetrics } from '../../api/washOrders'
 import { getSettings, type ParkingSettings } from '../../api/settings'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
+import { exportToCsv } from '../../utils/exportCsv'
 import { formatBRL } from '../../utils/pricing'
 import SettingsModal from './SettingsModal'
 import './Dashboard.css'
@@ -27,6 +28,44 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showSettings, setShowSettings] = useState(false)
+
+  const handleExportCsv = () => {
+    if (!parking || !wash) return
+    const today = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')
+
+    // Combine parking + wash data
+    const rows: Record<string, any>[] = []
+
+    // Parking checkouts
+    parking.recentCheckouts.forEach(r => {
+      rows.push({
+        tipo: 'Estacionamento',
+        placa: r.licensePlate,
+        valor: r.totalAmount.toFixed(2),
+        duracao: `${Math.floor(r.durationMinutes / 60)}h ${r.durationMinutes % 60}min`,
+        hora: new Date(r.exitTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      })
+    })
+
+    // Wash completed
+    wash.recentCompleted.forEach(r => {
+      rows.push({
+        tipo: 'Lavagem',
+        placa: r.licensePlate,
+        valor: r.price.toFixed(2),
+        duracao: r.serviceName,
+        hora: new Date(r.completedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      })
+    })
+
+    exportToCsv(`relatorio-${today}`, [
+      { header: 'Tipo', key: 'tipo' },
+      { header: 'Placa', key: 'placa' },
+      { header: 'Valor (R$)', key: 'valor' },
+      { header: 'Duração/Serviço', key: 'duracao' },
+      { header: 'Hora', key: 'hora' },
+    ], rows)
+  }
 
   const fetchAll = useCallback(async () => {
     try {
@@ -82,6 +121,7 @@ export default function Dashboard() {
         <div className="dashboard-header-right">
           <span className="dashboard-date">{todayLabel}</span>
           <button className="settings-btn" onClick={() => setShowSettings(true)}>⚙️ Configurações</button>
+          <button className="export-btn" onClick={handleExportCsv}>📥 Exportar CSV</button>
         </div>
       </div>
 

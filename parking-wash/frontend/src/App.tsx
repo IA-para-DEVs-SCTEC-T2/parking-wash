@@ -5,11 +5,15 @@ import { WashQueue } from './components/WashQueue/WashQueue'
 import Dashboard from './components/Dashboard/Dashboard'
 import { ToastContainer } from './components/Toast/Toast'
 import { useToast } from './hooks/useToast'
+import { useDarkMode } from './hooks/useDarkMode'
+import NotificationBadge from './components/NotificationBadge/NotificationBadge'
+import './theme.css'
 import './App.css'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'parking' | 'wash'>('parking')
   const { toasts, removeToast, success, error, info } = useToast()
+  const [isDark, toggleDark] = useDarkMode()
 
   const handleToast = (message: string, type: 'success' | 'error' | 'info') => {
     if (type === 'success') success(message)
@@ -23,6 +27,10 @@ export default function App() {
         <header className="app-header">
           <h1>🅿️ ParkingWash</h1>
           <p>Sistema de Estacionamento e Lavagem de Veículos</p>
+          <NotificationBadge />
+          <button className="theme-toggle" onClick={toggleDark} title={isDark ? 'Modo claro' : 'Modo escuro'}>
+            {isDark ? '☀️' : '🌙'}
+          </button>
         </header>
 
         <nav className="app-nav">
